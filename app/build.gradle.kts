@@ -81,3 +81,43 @@ dependencies {
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
 }
+
+// Factory: feature modules (deterministic, do not hand-edit)
+dependencies {
+    implementation(project(":feature:capture"))
+}
+
+// Factory: feature modules (deterministic, do not hand-edit)
+dependencies {
+    implementation(project(":feature:result"))
+}
+
+// Factory: feature modules (deterministic, do not hand-edit)
+dependencies {
+    implementation(project(":feature:home"))
+}
+
+// Factory: feature modules (deterministic, do not hand-edit)
+dependencies {
+    implementation(project(":feature:collection"))
+}
+
+// Factory: feature modules (deterministic, do not hand-edit)
+dependencies {
+    implementation(project(":feature:share"))
+}
+
+// Factory: feature modules (deterministic, do not hand-edit)
+dependencies {
+    implementation(project(":feature:onboarding"))
+}
+
+// Factory: feature modules (deterministic, do not hand-edit)
+dependencies {
+    implementation(project(":feature:paywall"))
+}
+
+// Factory: feature modules (deterministic, do not hand-edit)
+dependencies {
+    implementation(project(":feature:settings"))
+}

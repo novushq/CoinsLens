@@ -1,0 +1,265 @@
+{
+  "summary": "Core step builds the reusable Identify Engine (:core:identify + :core:ai with Firebase AI Logic and a fake engine), Room/DataStore data, domain use cases, design system, typed routes and per-feature entry stubs wired into :app. Eight independent feature tasks, each fenced to its own module, then run in parallel on muse; the paywall module alone owns billing and rewarded ads.",
+  "documents": {
+    "prd": "# CoinLens \u2014 product requirements\n\n## Problem\nPeople who hold coins or banknotes \u2014 hobby collectors, people who inherited a jar of coins, metal-detecting hobbyists \u2014 want to know *what it is* and *what it is worth* without learning numismatics. Rival apps (CoinSnap \u2248 $400k/month on Android US) show several ads before the first result, which drives 1-star reviews.\n\n## Wedge\n- First scan free, **zero ads before the first result**.\n- A clean result card with **honest value ranges** and an explicit **confidence label** plus disclaimer.\n- A shareable \"what's it worth\" card for reels and social.\n\n## Users (onboarding quiz personas)\n| persona | who | what the paywall copy stresses |\n|---|---|---|\n| `COLLECTOR` | builds a collection deliberately | unlimited scans, folders, grade notes, collection value |\n| `INHERITED` | has a jar / album from family | \"find the valuable ones\", honest ranges, share with family |\n| `DETECTORIST` | finds coins in the field | ID worn/old coins, error & variety hints, find log |\n\n## MVP features\n1. **Camera capture** with obverse/reverse guide (circular overlay, two-step flow: front then back, back is skippable), crop to the guide circle, **glare warning** (over-exposed highlight ratio) and blur warning; gallery import as alternative.\n2. **AI identification** (Firebase AI Logic, Gemini): kind (coin/banknote), country, denomination, year, mint mark and mint, composition, rarity, short description, up to 3 alternatives.\n3. **Value range**: circulated low\u2013high and uncirculated low\u2013high in USD, with confidence `HIGH | MEDIUM | LOW` and a fixed disclaimer (\"Estimates only. Condition, authenticity and market change the value. Get an in-hand appraisal before selling.\").\n4. **Error & variety hints** (doubled die, off-centre strike, repunched mint mark, clipped planchet, \u2026) always phrased as **\"Possible\"**, never as a certainty.\n5. **Collections** (Room): folders, add scan to folder, grade (Poor\u2026Mint State), grade notes, purchase price, quantity; **total value dashboard** (sum of midpoint of the grade-appropriate range, plus low\u2013high total).\n6. **Share card** image (coin photo + name + year + value range + confidence + app mark) via the system share sheet.\n7. **Onboarding quiz** (collector / inherited / detectorist) that tailors paywall copy; camera permission priming.\n\n## Monetization (policy `subscription_ads`)\nHard paywall after **1 free scan**. Plans: **Weekly $4.99**, **Annual $29.99 with 3-day trial**, **Lifetime $59.99** (prices shown from the store package, never hardcoded). Payers see **no ads ever**. Free users may watch **one rewarded ad to unlock one extra scan** (opt-in button on the paywall; no banners, no interstitials). Restore purchases reachable from paywall and settings.\n\n## AI & data\n- Gemini via **Firebase AI Logic** (`com.google.firebase:firebase-ai`, Gemini Developer API backend), model name from **Remote Config** param `model_name`, default `gemini-3.8-flash`. JSON structured output with a response schema.\n- **Dummy data for testing**: when `app/google-services.json` is absent or `-Pcoinlens.ai=fake`, a deterministic `FakeIdentifyEngine` returns entries from a bundled sample catalogue. All unit tests use fakes; no test hits the network.\n- All user data local (Room + DataStore). Photos stored in app-private storage.\n\n## Reuse\nThe **Identify Engine** (camera \u2192 AI \u2192 result card \u2192 collection) is built generic in `:core:identify` + `:core:ai` so StoneID and ThriftScan reuse it by supplying their own `IdentifySpec`.\n\n## Out of scope (v2)\nBanknote serial-number checks, melt-value calculator with live metal prices, CSV export, wishlist and price alerts, accounts/cloud sync.\n\n## ASO keywords\ncoin identifier, coin value, coin scanner, error coins, banknote value, coin collection.\n",
+    "architecture": "# CoinLens \u2014 architecture\n\nKotlin, Compose, Koin, coroutines/Flow, Room, DataStore. Package root `com.novushq.coinlens`. Business logic lives in pure-Kotlin core modules; features never import each other.\n\n## Modules\n\n| module | type | owns |\n|---|---|---|\n| `:core:model` | JVM | domain data classes & enums (below) |\n| `:core:common` | JVM | `AppResult`, `AppError`, dispatchers |\n| `:core:identify` | JVM | **reusable Identify Engine contracts** (no coin knowledge) |\n| `:core:domain` | JVM | `CoinIdentificationSpec`, repository interfaces, use cases |\n| `:core:ai` | Android lib | `FirebaseGeminiEngine`, `FakeIdentifyEngine` + sample catalogue, Remote Config model name, engine selection |\n| `:core:data` | Android lib | Room DB, DataStore prefs, `ImageStore`, repository impls, fake entitlement default |\n| `:core:designsystem` | Android lib | theme, tokens, shared components (`CoinFrame`, `ValueRangeBar`, `ConfidencePill`, `PossibleHintChip`, `UiStateSurface`) |\n| `:core:navigation` | Android lib | typed `@Serializable` routes + `AppNavigator` |\n| `:feature:*` | Android lib | one per task below |\n| `:app` | app | Application, Koin start, NavHost |\n\n`:core:identify`, `:core:ai` and `:core:database` style modules are created by the **core** step (not by the plan), and registered in `settings.gradle.kts` there.\n\n## Identify Engine (shared with StoneID and ThriftScan)\n\n```kotlin\n// :core:identify \u2014 pure Kotlin\nenum class ImageRole { PRIMARY, SECONDARY }            // coin: obverse, reverse\ndata class ImageInput(val bytes: ByteArray, val mimeType: String = \"image/jpeg\", val role: ImageRole)\nsealed interface FieldSchema { val description: String?; val nullable: Boolean\n  data class Obj(val properties: Map<String, FieldSchema>, val optional: List<String> = emptyList(), ...)\n  data class Arr(val items: FieldSchema, ...) ; data class Str(...) ; data class Enum(val values: List<String>, ...)\n  data class Integer(...) ; data class Number(...) ; data class Bool(...) }\ninterface IdentifySpec<T> {\n  val systemInstruction: String\n  fun userPrompt(images: List<ImageInput>): String\n  val schema: FieldSchema.Obj\n  fun parse(json: String): AppResult<T>              // kotlinx.serialization, lenient, validates ranges\n}\ninterface IdentifyEngine { suspend fun <T> identify(spec: IdentifySpec<T>, images: List<ImageInput>): AppResult<T> }\n```\n\n- `:core:ai` `FirebaseGeminiEngine` maps `FieldSchema` \u2192 `com.google.firebase.ai.type.Schema` (`Schema.obj(properties, optionalProperties)`, `Schema.array`, `Schema.string`, `Schema.enumeration`, `Schema.integer`, `Schema.double`, `Schema.boolean`), builds `generationConfig { responseMimeType = \"application/json\"; responseSchema = \u2026 }`, sends `content { image(bitmap) \u2026; text(prompt) }` via `Firebase.ai(backend = GenerativeBackend.googleAI()).generativeModel(modelName, generationConfig, systemInstruction = content { text(...) })`. Images downscaled to \u22641600 px long edge, JPEG q85 before sending (20 MB request cap). Errors map to `AppError` (network, quota/429, blocked/safety, parse).\n- Model name from Firebase Remote Config key `model_name`, default `gemini-3.8-flash` (defaults XML in `:core:ai` res/xml), fetched at startup, never blocking a scan.\n- `FakeIdentifyEngine` returns a sample-catalogue entry chosen deterministically from the image bytes hash (so tests are stable), after a small configurable delay. Catalogue (\u22658 entries, JSON asset in `:core:ai` or Kotlin constants): 1943 Lincoln steel cent, 1955 doubled-die Lincoln cent (hint: doubled die \u2013 possible), 1909-S VDB Lincoln cent, 2004-D Wisconsin quarter extra leaf (possible), 1921 Morgan dollar, 1964 Kennedy half (90% silver), UK 1983 2p \"New Pence\", India 2 rupee 2011, US $2 note 2003 (banknote), Canada 2012 penny, plus one `unrecognized` case.\n- Engine selection: `BuildConfig.AI_MODE` = `\"firebase\"` only when `app/google-services.json` exists **and** gradle property `coinlens.ai` \u2260 `fake`; otherwise `\"fake\"`. The google-services plugin is applied only when the file exists, so the project builds and runs with no Firebase project. In firebase mode, App Check debug provider in debug builds (`firebase-appcheck-debug`), Play Integrity in release.\n\n## Core model (`:core:model`)\n`ItemKind {COIN, BANKNOTE}`, `Rarity {COMMON, SCARCE, RARE, VERY_RARE, UNKNOWN}`, `Confidence {HIGH, MEDIUM, LOW}`, `Money(cents: Long, currency: String = \"USD\")`, `ValueRange(low: Money, high: Money)`, `ValueEstimate(circulated: ValueRange?, uncirculated: ValueRange?, confidence: Confidence, basis: String)`, `VarietyHint(name, description, whereToLook)` (always rendered as \"Possible \u2026\"), `CoinIdentification(kind, name, country, denomination, year: Int?, yearText, mintMark?, mint?, composition?, weightGrams?, diameterMm?, rarity, description, value: ValueEstimate, hints: List<VarietyHint>, alternatives: List<String>, recognized: Boolean)`, `ScanRecord(id, createdAt: Instant, obversePath, reversePath?, identification)`, `Folder(id, name, createdAt, itemCount, totalValue)`, `Grade {POOR, FAIR, ABOUT_GOOD, GOOD, VERY_GOOD, FINE, VERY_FINE, EXTREMELY_FINE, ABOUT_UNCIRCULATED, MINT_STATE, PROOF}` with `isUncirculated`, `CollectionItem(id, scanId, folderId?, grade?, gradeNotes, purchasePrice: Money?, quantity, addedAt)`, `CollectionSummary(itemCount, totalLow, totalHigh, totalMid, totalCost, byFolder)`, `Persona {COLLECTOR, INHERITED, DETECTORIST}`, `ScanAllowance(isPro, freeRemaining, bonusRemaining) { canScan }`.\n\n## Domain (`:core:domain`)\n- `CoinIdentificationSpec : IdentifySpec<CoinIdentification>` \u2014 prompt tells the model to be conservative: ranges not points, `LOW` confidence when unsure, hints only when visible evidence exists, `recognized=false` for non-coins.\n- Repositories: `ScanRepository` (observeRecent, get(id), save, delete), `CollectionRepository` (folders CRUD, items CRUD, observeSummary, observeFolder(id)), `ImageStore` (save(bytes): path, load, delete), `PreferencesRepository` (persona, onboardingDone, freeScansUsed, bonusScans), `EntitlementRepository` (`isPro: Flow<Boolean>`, `refresh()`, `restore(): AppResult<Boolean>`).\n- Use cases: `ObserveScanAllowanceUseCase` (free scans = 1), `IdentifyCoinUseCase(images)` \u2192 checks allowance \u2192 saves photos \u2192 engine \u2192 persists `ScanRecord` \u2192 consumes free/bonus allowance **only on success** \u2192 returns scan id, `GrantBonusScanUseCase`, `ComputeCollectionValueUseCase` (grade-aware: uncirculated range for AU/MS/PR, circulated otherwise, midpoint \u00d7 quantity), `AddToCollectionUseCase`, `CompleteOnboardingUseCase`.\n\n## Data (`:core:data`)\nRoom `CoinLensDatabase` v1, `exportSchema = true` (schemas in `core/data/schemas`), tables `scans` (identification stored as JSON column via TypeConverter), `folders`, `collection_items` (FK scan, FK folder nullable, ON DELETE SET NULL for folder, CASCADE for scan). DataStore Preferences for prefs. Default Koin binding `EntitlementRepository` \u2192 `LocalEntitlementRepository` (isPro false, debug-only toggle); `:feature:paywall` overrides it with the RevenueCat implementation.\n\n## Wiring rule that keeps parallel work conflict-free\nThe core step writes, **inside each scaffolded feature module**, a stub `fun NavGraphBuilder.<key>Graph(navigator: AppNavigator)` and `val <key>Module = module { }` in `feature/<key>/.../<Key>Entry.kt`, and `:app` calls every one of them (NavHost + `startKoin { modules(core\u2026, captureModule, \u2026) }`, feature modules after core so overrides win). Feature tasks then only edit files inside their own `feature/<key>/**` fence; they never touch `:app` or another feature. Cross-feature navigation goes only through `AppNavigator` and routes in `:core:navigation`.\n\n## Data flow\nCapture \u2192 `ScanDraft` (in-memory holder in `:core:data`, obverse/reverse bytes) \u2192 Result screen calls `IdentifyCoinUseCase` \u2192 Room \u2192 Home/Collection observe Flows \u2192 Share renders card from a `ScanRecord`.\n\n## Dependencies (verified 2026-09-27)\nFirebase BoM `34.19.0` (`firebase-ai`, `firebase-config`, `firebase-appcheck-debug`, `firebase-appcheck-playintegrity`), plugin `com.google.gms.google-services` `4.5.0`; CameraX `1.6.2` (`camera-core`, `camera-camera2`, `camera-lifecycle`, `camera-compose`); RevenueCat `10.15.1` (`com.revenuecat.purchases:purchases`); Google Mobile Ads `25.5.0` (`play-services-ads`). All go in `gradle/libs.versions.toml`.\n",
+    "design": "# CoinLens \u2014 design\n\n**Mood:** a museum label under a loupe \u2014 warm, precise, trustworthy. Numbers are the hero.\n\n## Colour\n- Seed **#8C6A2F** (aged brass). Chosen because every coin photo sits well against warm metal tones, and gold reads as \"value\" without looking like a finance app.\n- Light: surfaces warm off-white `#FBF8F2`-ish from the tonal palette (`surface`, `surfaceContainerLow`), text near-black warm neutral. Dark: deep warm charcoal surfaces (tone 6\u201312 of the neutral palette, not grey), brass primary at tone 80.\n- Accent (primary) is used once per screen: the scan/shutter action or the primary CTA.\n- Confidence colours come from the scheme: HIGH \u2192 `primary`, MEDIUM \u2192 `tertiary`, LOW \u2192 `error`; always paired with an icon (verified / help / warning) and the word.\n- Dynamic colour supported but off by default (the brass identity matters in screenshots).\n\n## Type\n- Display/headline: `FontFamily.Serif` (system serif), weights 600; used for coin names and the big total value \u2014 the \"museum label\" feel.\n- Body/labels: default sans (`FontFamily.Default`).\n- Scale: displaySmall 36/44 w600 serif; headlineMedium 28/36 w600 serif; titleLarge 22/28 w600 sans; titleMedium 16/24 w600; bodyLarge 16/24 w400; bodyMedium 14/20; labelLarge 14/20 w600; labelSmall 11/16 w600 letterSpacing 0.5.\n- All money uses **tabular figures** (`fontFeatureSettings = \"tnum\"`) via `CoinTextStyles.money`.\n\n## Spacing, shape, elevation\n- Spacing tokens: 4, 8, 12, 16, 24, 32, 48 (`Spacing.xs \u2026 xxl`). Screen gutter 16dp (24dp on \u2265600dp width).\n- Radii: small 8dp (chips), medium 16dp (cards), large 28dp (sheets, result card top). Coin photos are always **circles**.\n- Elevation: tonal only (surfaceContainer levels); no drop shadows except the shutter button.\n\n## Motion\n- 200\u2013280ms; container transform from capture thumbnail into result card; value numbers count up once (\u2264600ms) on first reveal, disabled under reduce-motion.\n- Shutter press: scale 0.92 spring + haptic `CONFIRM`.\n\n## Signature details (recognisable in a screenshot)\n1. **`CoinFrame`** \u2014 circular photo with a thin 2dp brass ring and a subtle inner shadow, obverse/reverse flip on tap.\n2. **`ValueRangeBar`** \u2014 a horizontal track showing circulated band (tonal) and uncirculated band (primary) on one scale with low/high tabular labels; confidence pill at the right end.\n3. **Museum label result card** \u2014 serif name, a small-caps metadata row (COUNTRY \u00b7 YEAR \u00b7 MINT), hairline dividers.\n\n## Components in `:core:designsystem`\n`CoinLensTheme`, `Spacing`, `CoinFrame`, `ValueRangeBar`, `ConfidencePill`, `PossibleHintChip` (\"Possible doubled die\"), `MoneyText`, `UiStateSurface` (loading skeleton/empty/error/success), `PrimaryButton`, `SectionHeader`, `DisclaimerText`.\n",
+    "navigation": "# CoinLens \u2014 navigation\n\nTyped `@Serializable` routes in `:core:navigation`. Start destination: `Onboarding` until onboarding is complete, then `Home`.\n\n| route | args | owner | reached from |\n|---|---|---|---|\n| `Onboarding` | \u2013 | `:feature:onboarding` | first launch |\n| `Home` | \u2013 | `:feature:home` | after onboarding; app launch |\n| `Capture` | \u2013 | `:feature:capture` | Home \"Scan\" FAB, Collection empty state |\n| `Result` | `scanId: String?` (null = identify current draft) | `:feature:result` | Capture done; Home recent scan tap |\n| `Collection` | \u2013 | `:feature:collection` | Home \"Collection\" |\n| `Folder` | `folderId: String` | `:feature:collection` | Collection folder tap |\n| `Item` | `itemId: String` | `:feature:collection` | Folder/Collection item tap |\n| `Share` | `scanId: String` | `:feature:share` | Result \"Share\", Item \"Share\" |\n| `Paywall` | `source: String` (`quota`, `settings`, `onboarding`) | `:feature:paywall` | Capture/Home when `ScanAllowance.canScan` is false; Settings |\n| `Settings` | \u2013 | `:feature:settings` | Home top bar |\n\nRules: Home is the only bottom-level destination (no bottom bar in MVP). Back from Result goes to Home, not Capture. Paywall is dismissible except after a completed purchase, which pops back to the source. The first scan never passes through the paywall.\n",
+    "aso": "# CoinLens \u2014 ASO & store listing\n\n- **Title (30):** CoinLens: Coin Identifier\n- **Short description (80):** Snap a coin or banknote, get its value, year, mint & error check. First scan free.\n- **Keywords to cover:** coin identifier, coin value, coin scanner, error coins, banknote value, coin collection.\n- **Long description angles:** honest value ranges with confidence; no ads before your first result; error & variety hints; collection value dashboard; shareable value card.\n- **Screenshots:** 1 result card (1955 doubled die), 2 capture with guide, 3 collection total value, 4 share card, 5 error hint.\n"
+  },
+  "modules": [
+    {
+      "key": "capture",
+      "name": "Capture",
+      "layer": "feature",
+      "description": "Camera capture with obverse/reverse guide, crop, glare and blur warnings, gallery import",
+      "source_paths": [
+        "feature/capture/**"
+      ],
+      "depends_on": []
+    },
+    {
+      "key": "result",
+      "name": "Result card",
+      "layer": "feature",
+      "description": "Runs identification and shows the result card, value range, confidence, possible hints, save-to-collection",
+      "source_paths": [
+        "feature/result/**"
+      ],
+      "depends_on": []
+    },
+    {
+      "key": "home",
+      "name": "Home dashboard",
+      "layer": "feature",
+      "description": "Total collection worth, recent scans, scan CTA and allowance state",
+      "source_paths": [
+        "feature/home/**"
+      ],
+      "depends_on": []
+    },
+    {
+      "key": "collection",
+      "name": "Collection",
+      "layer": "feature",
+      "description": "Folders, items, grade notes, purchase price and value totals",
+      "source_paths": [
+        "feature/collection/**"
+      ],
+      "depends_on": []
+    },
+    {
+      "key": "share",
+      "name": "Share card",
+      "layer": "feature",
+      "description": "Renders the what's-it-worth card image and shares it",
+      "source_paths": [
+        "feature/share/**"
+      ],
+      "depends_on": []
+    },
+    {
+      "key": "onboarding",
+      "name": "Onboarding quiz",
+      "layer": "feature",
+      "description": "Persona quiz, value promise, camera permission priming",
+      "source_paths": [
+        "feature/onboarding/**"
+      ],
+      "depends_on": []
+    },
+    {
+      "key": "paywall",
+      "name": "Paywall & monetization",
+      "layer": "feature",
+      "description": "Owns ALL billing and ads code: RevenueCat subscriptions, rewarded ad bonus scan, entitlement repository override, restore",
+      "source_paths": [
+        "feature/paywall/**"
+      ],
+      "depends_on": []
+    },
+    {
+      "key": "settings",
+      "name": "Settings",
+      "layer": "feature",
+      "description": "Restore purchases, manage subscription, disclaimer, privacy, AI mode info",
+      "source_paths": [
+        "feature/settings/**"
+      ],
+      "depends_on": []
+    }
+  ],
+  "tasks": [
+    {
+      "id": "t-capture",
+      "title": "Camera capture with coin guide",
+      "kind": "feature",
+      "module_key": "capture",
+      "description": "CameraX (`camera-camera2`, `camera-lifecycle`, `camera-compose` `CameraXViewfinder`, version 1.6.2) capture screen for route `Capture`.\n- Two steps: **Front** then **Back** (Back skippable). Circular guide overlay sized to 72% of the short edge with the label for the current side; `ImageCapture` takes the photo, then crop to the guide circle's bounding square and downscale to \u22641600px, JPEG q85.\n- **Glare warning**: analyse the preview with `ImageAnalysis` (Y plane): if >6% of pixels inside the guide are \u2265 245 luma show \"Glare detected \u2014 tilt the coin or move away from the light\"; **blur warning** via variance of Laplacian below a threshold. Warnings are advisory, never block.\n- Gallery import via Photo Picker (`PickVisualMedia`) as an alternative to the camera.\n- Permission: rationale screen with a Grant button; permanently denied \u2192 open app settings.\n- Before opening the camera check `ObserveScanAllowanceUseCase`; if `!canScan` navigate to `Paywall(source=\"quota\")`.\n- On done: write bytes into `ScanDraft` (core) and `navigator.navigate(Result(scanId = null))`.\n- Put glare/blur math in pure functions with unit tests (synthetic luma arrays).\n\nOnly edit files under `feature/capture/**`. Replace the core-provided stubs in `CaptureEntry.kt` (`captureGraph` and `captureModule`); do not touch `:app`, `:core:*` or other features. Use designsystem tokens only, all four UI states via `UiStateSurface`, strings in `feature/capture/src/main/res/values/strings.xml`, ViewModel exposes immutable `StateFlow<UiState>` + `onAction`, unit tests for the ViewModel with fakes and `kotlinx-coroutines-test`. Compose previews for each state.",
+      "acceptance_criteria": [
+        "Capture flow takes a front photo and optionally a back photo, cropped to the circular guide and \u22641600px, and stores both in ScanDraft",
+        "Glare and blur detectors are pure functions with unit tests covering bright, normal and blurry synthetic inputs",
+        "A glare warning banner appears while the guide area is over-exposed and does not block the shutter",
+        "Gallery import via Photo Picker produces the same ScanDraft as the camera path",
+        "When the scan allowance is exhausted the screen routes to Paywall(source=quota) instead of opening the camera",
+        "Camera permission denied and permanently denied states render with a clear next action"
+      ],
+      "touched_paths": [
+        "feature/capture/**"
+      ],
+      "depends_on": [],
+      "priority": 1,
+      "agent": "muse",
+      "model": ""
+    },
+    {
+      "id": "t-result",
+      "title": "Identification result card",
+      "kind": "feature",
+      "module_key": "result",
+      "description": "Screen for route `Result(scanId)`. If `scanId == null`, read `ScanDraft` and call `IdentifyCoinUseCase`; otherwise load the stored `ScanRecord`.\n- Loading: skeleton of the result card with rotating hints (\"Reading the date\u2026\", \"Checking mint marks\u2026\").\n- Success: museum-label card \u2014 `CoinFrame` (flip obverse/reverse), serif name, metadata row COUNTRY \u00b7 YEAR \u00b7 MINT MARK, composition/weight/diameter rows when present, rarity chip, `ValueRangeBar` with circulated and uncirculated ranges and `ConfidencePill`, `DisclaimerText` always visible below the value, error/variety hints as `PossibleHintChip` (text always starts with \"Possible\") with an expandable \"where to look\", alternatives list (\"Could also be\u2026\").\n- `recognized == false`: friendly not-a-coin state with Retake.\n- Errors from `AppError` (network, quota, safety, parse) with Retry (retry does not consume allowance twice; only success consumes).\n- Actions: **Add to collection** bottom sheet (choose/create folder, grade, purchase price, notes \u2192 `AddToCollectionUseCase`), **Share** \u2192 `Share(scanId)`, **Scan another** \u2192 Capture.\n- No ads anywhere on this screen.\n\nOnly edit files under `feature/result/**`. Replace the core-provided stubs in `ResultEntry.kt` (`resultGraph` and `resultModule`); do not touch `:app`, `:core:*` or other features. Use designsystem tokens only, all four UI states via `UiStateSurface`, strings in `feature/result/src/main/res/values/strings.xml`, ViewModel exposes immutable `StateFlow<UiState>` + `onAction`, unit tests for the ViewModel with fakes and `kotlinx-coroutines-test`. Compose previews for each state.",
+      "acceptance_criteria": [
+        "Identifying a draft with FakeIdentifyEngine shows the result card with name, country, year, mint mark, composition and rarity",
+        "Circulated and uncirculated ranges render on one ValueRangeBar with a confidence label and the disclaimer always visible",
+        "Every variety hint is rendered prefixed with 'Possible' and never as a certainty",
+        "An unrecognized result and each AppError type render distinct states, and Retry does not consume a second scan",
+        "Add to collection saves a CollectionItem with folder, grade, purchase price and notes",
+        "ViewModel unit tests cover loading \u2192 success, unrecognized, error \u2192 retry"
+      ],
+      "touched_paths": [
+        "feature/result/**"
+      ],
+      "depends_on": [],
+      "priority": 1,
+      "agent": "muse",
+      "model": ""
+    },
+    {
+      "id": "t-home",
+      "title": "Home dashboard with total worth",
+      "kind": "feature",
+      "module_key": "home",
+      "description": "Screen for route `Home`.\n- Hero: total collection worth (`CollectionSummary.totalMid`, displaySmall serif, tabular figures) with low\u2013high range underneath and item count; count-up animation once.\n- Scan CTA (large extended FAB, the only accent): routes to Capture if `canScan`, else to `Paywall(source=\"quota\")`. Show allowance line for free users (\"1 free scan left\" / \"Free scan used \u2014 go Pro or watch an ad for one more\"), hidden for Pro.\n- Recent scans (last 10) as horizontal row of `CoinFrame` thumbnails with name and value \u2192 `Result(scanId)`.\n- Entry to Collection and Settings (top bar icon with contentDescription).\n- Empty state for new users: illustration-free, copy \"Scan your first coin \u2014 it's free\".\n\nOnly edit files under `feature/home/**`. Replace the core-provided stubs in `HomeEntry.kt` (`homeGraph` and `homeModule`); do not touch `:app`, `:core:*` or other features. Use designsystem tokens only, all four UI states via `UiStateSurface`, strings in `feature/home/src/main/res/values/strings.xml`, ViewModel exposes immutable `StateFlow<UiState>` + `onAction`, unit tests for the ViewModel with fakes and `kotlinx-coroutines-test`. Compose previews for each state.",
+      "acceptance_criteria": [
+        "Home shows total worth, low\u2013high range and item count from CollectionSummary using tabular figures",
+        "Scan CTA routes to Capture when allowance permits and to Paywall(source=quota) otherwise",
+        "Allowance copy reflects free remaining, bonus scans and is hidden for Pro users",
+        "Recent scans list opens Result for the tapped scan",
+        "Empty, loading, error and success states render and are unit-tested in the ViewModel"
+      ],
+      "touched_paths": [
+        "feature/home/**"
+      ],
+      "depends_on": [],
+      "priority": 2,
+      "agent": "muse",
+      "model": ""
+    },
+    {
+      "id": "t-collection",
+      "title": "Collection folders and items",
+      "kind": "feature",
+      "module_key": "collection",
+      "description": "Screens for routes `Collection`, `Folder(folderId)`, `Item(itemId)`.\n- Collection: summary header (total value, cost basis, gain/loss), folders grid with item count and value, \"Unsorted\" pseudo-folder for items with no folder, create/rename/delete folder (delete confirmation names consequence: \"Delete 'Wheat cents'? Its 12 coins move to Unsorted.\").\n- Folder: items list (LazyColumn, stable keys) sorted by value desc / date / name; each row shows CoinFrame, name, year, grade, value.\n- Item: edit grade (Grade enum picker), grade notes, purchase price, quantity, move folder, delete (confirm), open original scan (`Result(scanId)`), Share (`Share(scanId)`).\n- Values via `ComputeCollectionValueUseCase` (grade-aware).\n\nOnly edit files under `feature/collection/**`. Replace the core-provided stubs in `CollectionEntry.kt` (`collectionGraph` and `collectionModule`); do not touch `:app`, `:core:*` or other features. Use designsystem tokens only, all four UI states via `UiStateSurface`, strings in `feature/collection/src/main/res/values/strings.xml`, ViewModel exposes immutable `StateFlow<UiState>` + `onAction`, unit tests for the ViewModel with fakes and `kotlinx-coroutines-test`. Compose previews for each state.",
+      "acceptance_criteria": [
+        "Folders can be created, renamed and deleted; deleting a folder moves its items to Unsorted after a confirmation naming the consequence",
+        "Folder screen lists items with name, year, grade and value and supports sorting by value, date and name",
+        "Item edits to grade, notes, purchase price, quantity and folder persist in Room and update totals immediately",
+        "Collection header shows total value, cost basis and gain/loss computed by ComputeCollectionValueUseCase",
+        "ViewModel unit tests cover folder CRUD and item edit flows with fake repositories"
+      ],
+      "touched_paths": [
+        "feature/collection/**"
+      ],
+      "depends_on": [],
+      "priority": 2,
+      "agent": "muse",
+      "model": ""
+    },
+    {
+      "id": "t-share",
+      "title": "Shareable what's-it-worth card",
+      "kind": "feature",
+      "module_key": "share",
+      "description": "Screen for route `Share(scanId)`.\n- Renders a 1080\u00d71350 (4:5, reels/Instagram friendly) card: brass ring coin photo, serif coin name, year \u00b7 country, value range (\"$0.10 \u2013 $25\"), confidence label, small \"Identified with CoinLens\" mark. Light and dark card variants toggle.\n- Render with `GraphicsLayer.toImageBitmap()` (Compose `rememberGraphicsLayer`) or an offscreen `Canvas`; save PNG to `cacheDir/share/`, share via `FileProvider` + `Intent.ACTION_SEND` (declare the provider in this module's manifest with authority `${applicationId}.share`).\n- Buttons: Share, Save to Photos (MediaStore, no storage permission on API 29+).\n\nOnly edit files under `feature/share/**`. Replace the core-provided stubs in `ShareEntry.kt` (`shareGraph` and `shareModule`); do not touch `:app`, `:core:*` or other features. Use designsystem tokens only, all four UI states via `UiStateSurface`, strings in `feature/share/src/main/res/values/strings.xml`, ViewModel exposes immutable `StateFlow<UiState>` + `onAction`, unit tests for the ViewModel with fakes and `kotlinx-coroutines-test`. Compose previews for each state.",
+      "acceptance_criteria": [
+        "The card renders the coin photo, name, year, country, value range and confidence label from the ScanRecord",
+        "Share produces a PNG via FileProvider and opens the system share sheet",
+        "Save to Photos writes the PNG through MediaStore without requesting storage permission on API 29+",
+        "Light and dark card variants can be toggled and both render correctly",
+        "Card layout logic (text formatting of value range) is unit-tested"
+      ],
+      "touched_paths": [
+        "feature/share/**"
+      ],
+      "depends_on": [],
+      "priority": 3,
+      "agent": "muse",
+      "model": ""
+    },
+    {
+      "id": "t-onboarding",
+      "title": "Onboarding persona quiz",
+      "kind": "feature",
+      "module_key": "onboarding",
+      "description": "Screen for route `Onboarding` (3 pages, \u226460s):\n1. Promise: \"Know what your coins are worth\" with the three wedge points (first scan free, no ads before your result, honest ranges).\n2. Quiz \"What brings you here?\": Collector / Inherited coins / Metal detecting \u2192 `PreferencesRepository.setPersona`.\n3. Camera priming (explain why, then request `CAMERA`), then `CompleteOnboardingUseCase` and navigate to `Capture` directly (first scan, no paywall, no ads).\n- Skip is allowed on page 1 and 2 (persona defaults to COLLECTOR).\n\nOnly edit files under `feature/onboarding/**`. Replace the core-provided stubs in `OnboardingEntry.kt` (`onboardingGraph` and `onboardingModule`); do not touch `:app`, `:core:*` or other features. Use designsystem tokens only, all four UI states via `UiStateSurface`, strings in `feature/onboarding/src/main/res/values/strings.xml`, ViewModel exposes immutable `StateFlow<UiState>` + `onAction`, unit tests for the ViewModel with fakes and `kotlinx-coroutines-test`. Compose previews for each state.",
+      "acceptance_criteria": [
+        "Choosing a persona persists it via PreferencesRepository and is readable by the paywall",
+        "Completing onboarding marks it done so the next launch starts at Home",
+        "The flow ends on Capture for the first free scan without passing through the paywall or any ad",
+        "Camera permission is requested only after the priming page explains why",
+        "ViewModel unit tests cover persona selection, skip and completion"
+      ],
+      "touched_paths": [
+        "feature/onboarding/**"
+      ],
+      "depends_on": [],
+      "priority": 1,
+      "agent": "muse",
+      "model": ""
+    },
+    {
+      "id": "t-paywall",
+      "title": "Paywall, subscriptions and rewarded scan",
+      "kind": "feature",
+      "module_key": "paywall",
+      "description": "This module **owns all billing and ads code** (policy `subscription_ads`). Screen for route `Paywall(source)`.\n- RevenueCat `com.revenuecat.purchases:purchases:10.15.1`: `Purchases.configure(PurchasesConfiguration.Builder(app, key).build())` in this module's Koin/initializer, key from `BuildConfig`/manifest placeholder fed by gradle property `revenuecat.apiKey` (never committed). Offering packages: weekly, annual (3-day trial), lifetime; entitlement id `pro`. Prices and trial text come from the store package, never hardcoded.\n- Provide `RevenueCatEntitlementRepository : EntitlementRepository` (isPro as Flow from `UpdatedCustomerInfoListener` + cached `getCustomerInfo`, works offline from cache) and register it in `paywallModule` so it overrides the core default.\n- Custom Compose paywall (persona-tailored copy, see PRD table; record why custom in an ADR): headline per persona, 3 plan cards (annual preselected with \"3-day free trial\" badge), Continue, Restore purchases, terms/privacy links, close X.\n- **Rewarded ad** (`play-services-ads:25.5.0`, test unit `ca-app-pub-3940256099942544/5224354917`, test app id `ca-app-pub-3940256099942544~3347511713` via manifest placeholder `admob.appId`): secondary button \"Watch an ad for 1 free scan\" \u2192 on `OnUserEarnedRewardListener` call `GrantBonusScanUseCase`; load lazily, main thread calls, `MobileAds.initialize` on IO the first time the paywall opens. Never initialised or shown for Pro users; no banners or interstitials.\n- **Dummy mode**: when `revenuecat.apiKey` is absent, use `FakeBillingGateway` with the three plans at $4.99/$29.99/$59.99 labelled \"(test)\" and a purchase that flips isPro; when `admob.appId` is absent, `FakeRewardedAdGateway` grants the reward after a 1s simulated ad. Hide billing/ads behind `BillingGateway` and `RewardedAdGateway` interfaces inside this module.\n- Cancelled purchase is silent; purchase success pops back to source. Record the monetization ADR (free vs gated, prices, entitlement id `pro`, why a custom paywall) in result.json `decisions`.\n\nOnly edit files under `feature/paywall/**`. Replace the core-provided stubs in `PaywallEntry.kt` (`paywallGraph` and `paywallModule`); do not touch `:app`, `:core:*` or other features. Use designsystem tokens only, all four UI states via `UiStateSurface`, strings in `feature/paywall/src/main/res/values/strings.xml`, ViewModel exposes immutable `StateFlow<UiState>` + `onAction`, unit tests for the ViewModel with fakes and `kotlinx-coroutines-test`. Compose previews for each state.",
+      "acceptance_criteria": [
+        "Paywall shows weekly, annual (with 3-day trial) and lifetime plans with prices from the billing gateway, annual preselected",
+        "Headline and benefit copy differ for COLLECTOR, INHERITED and DETECTORIST personas",
+        "A completed purchase makes EntitlementRepository.isPro emit true and returns to the source screen; a cancelled purchase shows no error",
+        "Watching the rewarded ad grants exactly one bonus scan via GrantBonusScanUseCase and is never offered to Pro users",
+        "Restore purchases is available and reports success or 'nothing to restore'",
+        "All billing and ads symbols live only in feature/paywall, with fake gateways used when API keys are absent, and ViewModel tests cover purchase, cancel, restore and reward"
+      ],
+      "touched_paths": [
+        "feature/paywall/**"
+      ],
+      "depends_on": [],
+      "priority": 1,
+      "agent": "muse",
+      "model": ""
+    },
+    {
+      "id": "t-settings",
+      "title": "Settings and legal",
+      "kind": "feature",
+      "module_key": "settings",
+      "description": "Screen for route `Settings`: Plan status (Free with scans left / Pro), Go Pro \u2192 `Paywall(source=\"settings\")`, **Restore purchases** (`EntitlementRepository.restore()`), Manage subscription (opens Play subscriptions deep link), value disclaimer text, privacy policy & terms links, \"AI engine: Gemini (Firebase) / Demo data\" row from `BuildConfig`-backed `AiInfo` provided by core, app version, reset onboarding (debug builds only), change persona.\n\nOnly edit files under `feature/settings/**`. Replace the core-provided stubs in `SettingsEntry.kt` (`settingsGraph` and `settingsModule`); do not touch `:app`, `:core:*` or other features. Use designsystem tokens only, all four UI states via `UiStateSurface`, strings in `feature/settings/src/main/res/values/strings.xml`, ViewModel exposes immutable `StateFlow<UiState>` + `onAction`, unit tests for the ViewModel with fakes and `kotlinx-coroutines-test`. Compose previews for each state.",
+      "acceptance_criteria": [
+        "Restore purchases calls EntitlementRepository.restore and shows the outcome",
+        "Plan status reflects Free (with remaining scans) or Pro from the allowance flow",
+        "Manage subscription opens the Play Store subscriptions deep link",
+        "The AI engine row shows whether Gemini or demo data is active",
+        "Persona can be changed and persists; ViewModel unit tests cover restore success and failure"
+      ],
+      "touched_paths": [
+        "feature/settings/**"
+      ],
+      "depends_on": [],
+      "priority": 3,
+      "agent": "muse",
+      "model": ""
+    }
+  ]
+}
