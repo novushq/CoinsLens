@@ -1,0 +1,21 @@
+{
+  "app_id": "app_zecy7nd27tk8",
+  "slug": "coinlens",
+  "name": "CoinLens",
+  "package": "com.novushq.coinlens",
+  "factory_api": "http://127.0.0.1:8473",
+  "docs": {
+    "prd": "docs/PRD.md",
+    "architecture": "docs/ARCHITECTURE.md",
+    "design": "docs/DESIGN.md",
+    "navigation": "docs/NAVIGATION.md",
+    "modules": "docs/MODULES.md",
+    "data_flow": "docs/DATA_FLOW.md",
+    "api_spec": "docs/API_SPEC.md",
+    "test_plan": "docs/TEST_PLAN.md",
+    "aso": "docs/ASO.md",
+    "context": "docs/CONTEXT.md",
+    "release_notes": "docs/RELEASE_NOTES.md",
+    "guardrails": "docs/GUARDRAILS.md"
+  }
+}

@@ -1,0 +1,40 @@
+package com.novushq.coinlens.common
+
+/** Every failure this app can express. Keep it exhaustive and UI-mappable. */
+sealed class AppError(
+    open val message: String,
+    open val cause: Throwable? = null,
+) {
+    data class Network(
+        override val message: String = "No connection",
+        override val cause: Throwable? = null,
+    ) : AppError(message, cause)
+
+    data class Timeout(
+        override val message: String = "Request timed out",
+        override val cause: Throwable? = null,
+    ) : AppError(message, cause)
+
+    data class Http(
+        val code: Int,
+        override val message: String = "Server error",
+        val body: String? = null,
+    ) : AppError(message)
+
+    data class Storage(
+        override val message: String = "Storage failure",
+        override val cause: Throwable? = null,
+    ) : AppError(message, cause)
+
+    data class NotFound(override val message: String = "Not found") : AppError(message)
+
+    data class Validation(
+        val field: String,
+        override val message: String,
+    ) : AppError(message)
+
+    data class Unknown(
+        override val message: String = "Something went wrong",
+        override val cause: Throwable? = null,
+    ) : AppError(message, cause)
+}
