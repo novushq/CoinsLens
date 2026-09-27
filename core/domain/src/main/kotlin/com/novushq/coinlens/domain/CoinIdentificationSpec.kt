@@ -8,7 +8,7 @@ import com.novushq.coinlens.identify.ImageInput
 import com.novushq.coinlens.model.CoinIdentification
 import com.novushq.coinlens.model.Confidence
 import com.novushq.coinlens.model.ItemKind
-import com.novushq.coinlens.model.Money
+import com.novushq.coinlens.model.usd
 import com.novushq.coinlens.model.Rarity
 import com.novushq.coinlens.model.ValueEstimate
 import com.novushq.coinlens.model.ValueRange
@@ -25,13 +25,23 @@ class CoinIdentificationSpec : IdentifySpec<CoinIdentification> {
 
     override val systemInstruction: String =
         "You are a numismatist identifying coins and banknotes from photos. " +
-            "Be conservative: report value as low-high ranges in USD cents, never single points. " +
-            "Use LOW confidence when unsure. List variety or error hints only when visible " +
-            "evidence exists, phrased as possibilities. If the image is not a coin or banknote, " +
-            "return recognized=false. Up to 3 alternatives in 'alternatives'."
+            "Be conservative: report values as low-high ranges in US dollars, never single points, " +
+            "and give both a circulated range (worn, typical finds) and an uncirculated range when " +
+            "the piece was issued for circulation. Use LOW confidence when the date, mint mark or " +
+            "type is not clearly readable. List error or variety hints only when visible evidence " +
+            "in the photo supports them; they are possibilities, not findings. If the image is not " +
+            "a coin or banknote, return recognized=false with a one-line description of what it is. " +
+            "Give at most 3 alternative identifications."
 
     override fun userPrompt(images: List<ImageInput>): String = buildString {
-        append("Identify this ${if (images.size > 1) "coin shown obverse then reverse" else "coin or banknote"}. ")
+        append(
+            if (images.size > 1) {
+                "The first photo is the front (obverse), the second the back (reverse) of one item. "
+            } else {
+                "One photo of the front (obverse) of one item. "
+            },
+        )
+        append("Identify it. ")
         append("Return kind, name, country, denomination, year, mint mark and mint, composition, ")
         append("weight, diameter, rarity, description, circulated and uncirculated USD value ranges, ")
         append("confidence, possible variety hints and alternatives.")
@@ -52,10 +62,10 @@ class CoinIdentificationSpec : IdentifySpec<CoinIdentification> {
             "diameterMm" to FieldSchema.Number("diameter in mm", nullable = true),
             "rarity" to FieldSchema.Enum(listOf("COMMON", "SCARCE", "RARE", "VERY_RARE", "UNKNOWN")),
             "description" to FieldSchema.Str("one short paragraph"),
-            "circulatedLowCents" to FieldSchema.Integer("circulated low USD cents", nullable = true),
-            "circulatedHighCents" to FieldSchema.Integer("circulated high USD cents", nullable = true),
-            "uncirculatedLowCents" to FieldSchema.Integer("uncirculated low USD cents", nullable = true),
-            "uncirculatedHighCents" to FieldSchema.Integer("uncirculated high USD cents", nullable = true),
+            "circulatedLowUsd" to FieldSchema.Number("circulated low, US dollars", nullable = true),
+            "circulatedHighUsd" to FieldSchema.Number("circulated high, US dollars", nullable = true),
+            "uncirculatedLowUsd" to FieldSchema.Number("uncirculated low, US dollars", nullable = true),
+            "uncirculatedHighUsd" to FieldSchema.Number("uncirculated high, US dollars", nullable = true),
             "confidence" to FieldSchema.Enum(listOf("HIGH", "MEDIUM", "LOW")),
             "basis" to FieldSchema.Str("one line on what the range is based on", nullable = true),
             "hints" to FieldSchema.Arr(
@@ -74,16 +84,16 @@ class CoinIdentificationSpec : IdentifySpec<CoinIdentification> {
         ),
         optional = listOf(
             "year", "yearText", "mintMark", "mint", "composition", "weightGrams", "diameterMm",
-            "circulatedLowCents", "circulatedHighCents",
-            "uncirculatedLowCents", "uncirculatedHighCents", "basis",
+            "circulatedLowUsd", "circulatedHighUsd",
+            "uncirculatedLowUsd", "uncirculatedHighUsd", "basis",
         ),
     )
 
     @Serializable
     internal data class HintJson(
         val name: String = "",
-        val description: String = "",
-        val whereToLook: String = "",
+        val description: String? = null,
+        val whereToLook: String? = null,
     )
 
     @Serializable
@@ -93,7 +103,7 @@ class CoinIdentificationSpec : IdentifySpec<CoinIdentification> {
         val country: String = "",
         val denomination: String = "",
         val year: Int? = null,
-        val yearText: String = "",
+        val yearText: String? = null,
         val mintMark: String? = null,
         val mint: String? = null,
         val composition: String? = null,
@@ -101,29 +111,36 @@ class CoinIdentificationSpec : IdentifySpec<CoinIdentification> {
         val diameterMm: Double? = null,
         val rarity: String = "UNKNOWN",
         val description: String = "",
-        val circulatedLowCents: Long? = null,
-        val circulatedHighCents: Long? = null,
-        val uncirculatedLowCents: Long? = null,
-        val uncirculatedHighCents: Long? = null,
+        val circulatedLowUsd: Double? = null,
+        val circulatedHighUsd: Double? = null,
+        val uncirculatedLowUsd: Double? = null,
+        val uncirculatedHighUsd: Double? = null,
         val confidence: String = "LOW",
-        val basis: String = "",
+        val basis: String? = null,
         val hints: List<HintJson> = emptyList(),
         val alternatives: List<String> = emptyList(),
         val recognized: Boolean = true,
     )
 
-    private val json = Json { ignoreUnknownKeys = true; isLenient = true; explicitNulls = false }
+    private val json = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+        explicitNulls = false
+        coerceInputValues = true
+    }
 
     override fun parse(json: String): AppResult<CoinIdentification> {
+        val body = json.trim().removePrefix("```json").removePrefix("```").removeSuffix("```").trim()
         val dto = try {
-            this.json.decodeFromString<CoinJson>(json)
-        } catch (e: Exception) {
+            this.json.decodeFromString<CoinJson>(body)
+        } catch (e: IllegalArgumentException) {
+            // SerializationException extends IllegalArgumentException.
             return AppResult.Failure(AppError.Parse(cause = e))
         }
         if (!dto.recognized) return AppResult.Success(CoinIdentification.unrecognized(dto.description))
         if (dto.name.isBlank()) return AppResult.Failure(AppError.Parse("Missing coin name"))
-        val circulated = rangeOrNull(dto.circulatedLowCents, dto.circulatedHighCents)
-        val uncirculated = rangeOrNull(dto.uncirculatedLowCents, dto.uncirculatedHighCents)
+        val circulated = rangeOrNull(dto.circulatedLowUsd, dto.circulatedHighUsd)
+        val uncirculated = rangeOrNull(dto.uncirculatedLowUsd, dto.uncirculatedHighUsd)
         if (circulated == null && uncirculated == null) {
             return AppResult.Failure(AppError.Parse("Missing value range"))
         }
@@ -133,8 +150,8 @@ class CoinIdentificationSpec : IdentifySpec<CoinIdentification> {
                 name = dto.name,
                 country = dto.country,
                 denomination = dto.denomination,
-                year = dto.year,
-                yearText = dto.yearText,
+                year = dto.year?.takeIf { it in 1..2100 },
+                yearText = dto.yearText?.takeIf { it.isNotBlank() } ?: dto.year?.toString().orEmpty(),
                 mintMark = dto.mintMark?.ifBlank { null },
                 mint = dto.mint?.ifBlank { null },
                 composition = dto.composition?.ifBlank { null },
@@ -146,10 +163,10 @@ class CoinIdentificationSpec : IdentifySpec<CoinIdentification> {
                     circulated = circulated,
                     uncirculated = uncirculated,
                     confidence = parseConfidence(dto.confidence),
-                    basis = dto.basis,
+                    basis = dto.basis.orEmpty(),
                 ),
                 hints = dto.hints.filter { it.name.isNotBlank() }.take(5).map {
-                    VarietyHint(it.name, it.description, it.whereToLook)
+                    VarietyHint(it.name.trim(), it.description.orEmpty(), it.whereToLook.orEmpty())
                 },
                 alternatives = dto.alternatives.filter { it.isNotBlank() }.take(3),
                 recognized = true,
@@ -158,11 +175,10 @@ class CoinIdentificationSpec : IdentifySpec<CoinIdentification> {
     }
 
     /** Inverted or negative model output is coerced (min/max, floor 0), never fatal. */
-    private fun rangeOrNull(low: Long?, high: Long?): ValueRange? {
-        if (low == null && high == null) return null
-        val lo = maxOf(0, minOf(low ?: high!!, high ?: low!!))
-        val hi = maxOf(0, maxOf(low ?: high!!, high ?: low!!))
-        return ValueRange(Money(lo), Money(hi))
+    private fun rangeOrNull(low: Double?, high: Double?): ValueRange? {
+        val bounds = listOfNotNull(low, high).filter { it.isFinite() }.map { usd(it.coerceAtLeast(0.0)) }
+        if (bounds.isEmpty()) return null
+        return ValueRange(bounds.minBy { it.cents }, bounds.maxBy { it.cents })
     }
 
     private fun parseConfidence(raw: String): Confidence = when (raw.uppercase()) {

@@ -15,3 +15,6 @@ captures/
 
 # transient agent workspace: briefs, results, plans
 .factory/
+
+# Firebase client config: kept out of the public repo
+app/google-services.json

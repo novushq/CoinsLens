@@ -1,7 +1,7 @@
 [versions]
 agp = "8.13.2"
 kotlin = "2.2.20"
-ksp = "2.2.10-2.0.2"
+ksp = "2.2.20-2.0.4"
 coreKtx = "1.17.0"
 lifecycle = "2.10.0"
 activityCompose = "1.12.3"
@@ -28,6 +28,10 @@ playAds = "25.5.0"
 mockk = "1.14.9"
 turbine = "1.2.1"
 kotest = "5.9.1"
+coreSplashscreen = "1.2.0"
+exifinterface = "1.4.2"
+robolectric = "4.16"
+androidxTestCore = "1.7.0"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
@@ -73,6 +77,11 @@ firebase-ai = { module = "com.google.firebase:firebase-ai" }
 firebase-config = { module = "com.google.firebase:firebase-config" }
 firebase-appcheck-debug = { module = "com.google.firebase:firebase-appcheck-debug" }
 firebase-appcheck-playintegrity = { module = "com.google.firebase:firebase-appcheck-playintegrity" }
+androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashscreen" }
+androidx-exifinterface = { module = "androidx.exifinterface:exifinterface", version.ref = "exifinterface" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+androidx-test-core = { module = "androidx.test:core", version.ref = "androidxTestCore" }
+datastore-preferences-core = { module = "androidx.datastore:datastore-preferences-core", version.ref = "datastore" }
 camerax-core = { module = "androidx.camera:camera-core", version.ref = "camerax" }
 camerax-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "camerax" }
 camerax-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "camerax" }
@@ -91,4 +100,5 @@ kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+room = { id = "androidx.room", version.ref = "room" }
 google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }

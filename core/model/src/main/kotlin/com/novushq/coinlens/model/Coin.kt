@@ -2,28 +2,24 @@ package com.novushq.coinlens.model
 
 import kotlinx.serialization.Serializable
 
-/** Fixed disclaimer rendered under every value display (PRD §MVP-3). */
-const val VALUATION_DISCLAIMER =
-    "Estimates only. Condition, authenticity and market change the value. " +
-        "Get an in-hand appraisal before selling."
-
 enum class ItemKind { COIN, BANKNOTE }
 
 enum class Rarity { COMMON, SCARCE, RARE, VERY_RARE, UNKNOWN }
 
 enum class Confidence { HIGH, MEDIUM, LOW }
 
-/** Low–high estimate. Invariant: low <= high. */
+/** Low–high estimate. Invariant: same currency, 0 <= low <= high. */
 @Serializable
-data class ValueRange(val low: Money, high: Money) {
+data class ValueRange(val low: Money, val high: Money) {
     init {
         require(low.currency == high.currency) { "range currencies must match" }
-        require(low.cents <= high.cents) { "low must not exceed high" }
+        require(low.cents in 0..high.cents) { "expected 0 <= low <= high" }
     }
 
-    fun midpoint(): Money = Money((low.cents + high.cents) / 2, low.currency)
+    val midpoint: Money get() = Money((low.cents + high.cents) / 2, low.currency)
 }
 
+/** At least one of the two ranges is always present. */
 @Serializable
 data class ValueEstimate(
     val circulated: ValueRange? = null,
@@ -34,17 +30,23 @@ data class ValueEstimate(
     init {
         require(circulated != null || uncirculated != null) { "at least one range required" }
     }
+
+    /** Grade-aware range: uncirculated for AU/MS/PR, circulated otherwise (falls back to the other band). */
+    fun rangeFor(grade: Grade?): ValueRange =
+        if (grade?.isUncirculated == true) {
+            uncirculated ?: circulated
+        } else {
+            circulated ?: uncirculated
+        } ?: error("unreachable: init guarantees a range")
 }
 
-/** Error/variety hint. Always rendered prefixed with "Possible", never as fact (PRD §MVP-4). */
+/** Error/variety hint. UI always renders it as "Possible <name>", never as fact (PRD §MVP-4). */
 @Serializable
 data class VarietyHint(
     val name: String,
     val description: String = "",
     val whereToLook: String = "",
-) {
-    fun displayName(): String = "Possible $name"
-}
+)
 
 @Serializable
 data class CoinIdentification(
@@ -67,18 +69,15 @@ data class CoinIdentification(
     val recognized: Boolean = true,
 ) {
     companion object {
-        fun unrecognized(description: String = "This doesn't look like a coin or banknote."): CoinIdentification =
-            CoinIdentification(
-                kind = ItemKind.COIN,
-                name = "Unrecognized",
-                country = "",
-                denomination = "",
-                value = ValueEstimate(
-                    circulated = ValueRange(usd(0.0), usd(0.0)),
-                    confidence = Confidence.LOW,
-                ),
-                description = description,
-                recognized = false,
-            )
+        /** Placeholder for photos that are not a coin or banknote. UI renders its own copy. */
+        fun unrecognized(description: String = ""): CoinIdentification = CoinIdentification(
+            kind = ItemKind.COIN,
+            name = "",
+            country = "",
+            denomination = "",
+            description = description,
+            value = ValueEstimate(circulated = ValueRange(Money.ZERO, Money.ZERO), confidence = Confidence.LOW),
+            recognized = false,
+        )
     }
 }

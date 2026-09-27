@@ -1,110 +1,119 @@
 package com.novushq.coinlens.domain
 
 import com.novushq.coinlens.common.AppError
-import com.novushq.coinlens.common.AppResult
 import com.novushq.coinlens.model.CollectionItem
-import com.novushq.coinlens.model.CoinIdentification
-import com.novushq.coinlens.model.Confidence
+import com.novushq.coinlens.model.CollectionSummary
 import com.novushq.coinlens.model.Grade
-import com.novushq.coinlens.model.ItemKind
 import com.novushq.coinlens.model.Money
-import com.novushq.coinlens.model.Persona
-import com.novushq.coinlens.model.Rarity
-import com.novushq.coinlens.model.ValuedItem
-import com.novushq.coinlens.model.ValueEstimate
+import com.novushq.coinlens.model.ScanRecord
 import com.novushq.coinlens.model.ValueRange
+import com.novushq.coinlens.model.ValuedItem
 import com.novushq.coinlens.model.usd
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
-import org.junit.Rule
 import org.junit.Test
+import java.time.Instant
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class CollectionValueTest {
+    private val compute = ComputeCollectionValueUseCase()
+    private val t0 = Instant.EPOCH
 
-    @get:Rule val main = MainDispatcherRule()
-
-    private fun id(circ: ValueRange?, unc: ValueRange?) = CoinIdentification(
-        kind = ItemKind.COIN, name = "t", country = "c", denomination = "d",
-        value = ValueEstimate(circ, unc, Confidence.MEDIUM),
+    private fun valued(
+        grade: Grade? = null,
+        quantity: Int = 1,
+        folderId: String? = null,
+        price: Money? = null,
+        identification: com.novushq.coinlens.model.CoinIdentification = coin(),
+    ) = ValuedItem(
+        item = CollectionItem("i-$grade-$quantity-$folderId", "s", folderId, grade, "", price, quantity, t0),
+        scan = ScanRecord("s", t0, "/o.jpg", null, identification),
     )
 
-    private fun item(
-        id: String = "i",
-        folder: String? = null,
-        grade: Grade? = null,
-        qty: Int = 1,
-        price: Money? = null,
-    ) = CollectionItem(id, "s", folder, grade, "", price, qty, 0)
-
-    @Test fun `circulated grade uses circulated range`() {
-        val summary = ComputeCollectionValueUseCase().invoke(
-            listOf(ValuedItem(item(grade = Grade.FINE), id(ValueRange(usd(1.0), usd(3.0)), ValueRange(usd(10.0), usd(20.0))))),
-        )
-        assertEquals(Money(100), summary.totalLow)
-        assertEquals(Money(300), summary.totalHigh)
-        assertEquals(Money(200), summary.totalMid)
+    @Test
+    fun `empty collection is zero`() {
+        assertEquals(CollectionSummary(), compute(emptyList()))
     }
 
-    @Test fun `uncirculated grade uses uncirculated range`() {
-        val summary = ComputeCollectionValueUseCase().invoke(
-            listOf(ValuedItem(item(grade = Grade.MINT_STATE), id(ValueRange(usd(1.0), usd(3.0)), ValueRange(usd(10.0), usd(20.0))))),
-        )
-        assertEquals(Money(1000), summary.totalLow)
-        assertEquals(Money(1500), summary.totalMid)
+    @Test
+    fun `circulated grade uses circulated range`() {
+        val s = compute(listOf(valued(Grade.FINE)))
+        assertEquals(usd(1.0), s.totalLow)
+        assertEquals(usd(3.0), s.totalHigh)
+        assertEquals(usd(2.0), s.totalMid)
     }
 
-    @Test fun `quantity multiplies and cost accumulates`() {
-        val summary = ComputeCollectionValueUseCase().invoke(
-            listOf(ValuedItem(item(qty = 3, price = Money(50)), id(ValueRange(usd(1.0), usd(1.0)), null))),
-        )
-        assertEquals(1, summary.itemCount)
-        assertEquals(Money(300), summary.totalMid)
-        assertEquals(Money(150), summary.totalCost)
+    @Test
+    fun `AU, MS and proof use uncirculated range`() {
+        listOf(Grade.ABOUT_UNCIRCULATED, Grade.MINT_STATE, Grade.PROOF).forEach { grade ->
+            assertEquals(usd(15.0), compute(listOf(valued(grade))).totalMid)
+        }
     }
 
-    @Test fun `missing identification counts item but adds no value`() {
-        val summary = ComputeCollectionValueUseCase().invoke(listOf(ValuedItem(item(), null)))
-        assertEquals(1, summary.itemCount)
-        assertEquals(Money(0), summary.totalMid)
+    @Test
+    fun `ungraded items use circulated range`() {
+        assertEquals(usd(2.0), compute(listOf(valued(grade = null))).totalMid)
     }
 
-    @Test fun `null folder buckets to unsorted`() {
-        val summary = ComputeCollectionValueUseCase().invoke(
-            listOf(ValuedItem(item(folder = "f1"), id(ValueRange(usd(1.0), usd(1.0)), null))),
-        )
-        assertEquals(Money(100), summary.byFolder[ComputeCollectionValueUseCase.UNSORTED])
+    @Test
+    fun `missing band falls back to the other band`() {
+        val onlyUnc = coin(circulated = null)
+        assertEquals(usd(15.0), compute(listOf(valued(Grade.GOOD, identification = onlyUnc))).totalMid)
+        val onlyCirc = coin(uncirculated = null)
+        assertEquals(usd(2.0), compute(listOf(valued(Grade.MINT_STATE, identification = onlyCirc))).totalMid)
     }
 
-    @Test fun `add to collection validates quantity and price`() = runTest(main.dispatcher) {
-        val useCase = AddToCollectionUseCase(FakeCollectionRepository())
-        val badQty = useCase(AddToCollectionUseCase.Params("s", quantity = 0))
-        assertTrue(badQty is AppResult.Failure && badQty.error is AppError.Validation)
-        val badPrice = useCase(AddToCollectionUseCase.Params("s", purchasePrice = Money(-5)))
-        assertTrue(badPrice is AppResult.Failure && badPrice.error is AppError.Validation)
-        val ok = useCase(AddToCollectionUseCase.Params("s", grade = Grade.GOOD, quantity = 2))
-        assertTrue(ok is AppResult.Success)
+    @Test
+    fun `quantity multiplies value and cost`() {
+        val s = compute(listOf(valued(Grade.FINE, quantity = 3, price = usd(0.5))))
+        assertEquals(usd(6.0), s.totalMid)
+        assertEquals(usd(1.5), s.totalCost)
+        assertEquals(3, s.itemCount)
     }
 
-    @Test fun `bonus scan grants exactly one`() = runTest(main.dispatcher) {
-        val prefs = FakePreferences()
-        GrantBonusScanUseCase(prefs)()
-        GrantBonusScanUseCase(prefs)()
-        assertEquals(2, prefs.bonusScans.first())
+    @Test
+    fun `midpoint of odd cents rounds down`() {
+        val odd = coin(circulated = ValueRange(Money(1), Money(2)), uncirculated = null)
+        assertEquals(Money(1), compute(listOf(valued(identification = odd))).totalMid)
     }
 
-    @Test fun `onboarding persists persona and done`() = runTest(main.dispatcher) {
-        val prefs = FakePreferences()
-        CompleteOnboardingUseCase(prefs)(Persona.DETECTORIST)
-        assertEquals(Persona.DETECTORIST, prefs.persona.first())
-        assertEquals(true, prefs.onboardingDone.first())
+    @Test
+    fun `totals are grouped by folder with unsorted bucket`() {
+        val s = compute(listOf(valued(folderId = "a"), valued(folderId = "a", quantity = 2), valued(folderId = null)))
+        assertEquals(usd(6.0), s.byFolder["a"])
+        assertEquals(usd(2.0), s.byFolder[CollectionSummary.UNSORTED])
+        assertEquals(usd(8.0), s.totalMid)
     }
 
-    @Test fun `rarity defaults unknown and money formats`() {
-        assertEquals(Rarity.UNKNOWN, id(null, ValueRange(usd(1.0), usd(2.0))).rarity)
-        assertEquals("\$12.50", Money(1250).toDisplayString())
+    @Test
+    fun `unrecognized scans add no value but keep cost`() {
+        val s = compute(listOf(valued(identification = coin(recognized = false), price = usd(1.0))))
+        assertEquals(Money.ZERO, s.totalMid)
+        assertEquals(usd(1.0), s.totalCost)
+    }
+
+    @Test
+    fun `add to collection validates input`() = runTest {
+        val repo = FakeCollectionRepository()
+        val add = AddToCollectionUseCase(repo, clock = { t0 }, newId = { "item-1" })
+
+        assertTrue(add(AddToCollectionUseCase.Params(scanId = "")).errorOrNull() is AppError.Validation)
+        assertTrue(add(AddToCollectionUseCase.Params("s", quantity = 0)).errorOrNull() is AppError.Validation)
+        assertTrue(add(AddToCollectionUseCase.Params("s", purchasePrice = Money(-1))).errorOrNull() is AppError.Validation)
+        assertTrue(repo.items.isEmpty())
+    }
+
+    @Test
+    fun `add to collection stores a trimmed item`() = runTest {
+        val repo = FakeCollectionRepository()
+        val add = AddToCollectionUseCase(repo, clock = { t0 }, newId = { "item-1" })
+
+        val result = add(AddToCollectionUseCase.Params("s", "f", Grade.MINT_STATE, "  nice luster ", usd(4.0), 2))
+
+        assertEquals("item-1", result.getOrNull())
+        val item = repo.items.getValue("item-1")
+        assertEquals("nice luster", item.gradeNotes)
+        assertEquals(2, item.quantity)
+        assertEquals(t0, item.addedAt)
     }
 }

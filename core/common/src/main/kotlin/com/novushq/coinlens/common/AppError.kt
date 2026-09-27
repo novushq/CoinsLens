@@ -28,9 +28,14 @@ sealed class AppError(
 
     data class NotFound(override val message: String = "Not found") : AppError(message)
 
-    /** HTTP 429 / quota exhausted from the AI backend. */
+    /** The user has no free, bonus or Pro scans left. UI routes to the paywall. */
+    data class ScanLimitReached(
+        override val message: String = "No scans left",
+    ) : AppError(message)
+
+    /** HTTP 429 / quota exhausted on the AI backend. Retry later; not the user's allowance. */
     data class QuotaExceeded(
-        override val message: String = "Scan limit reached",
+        override val message: String = "Too many requests",
         override val cause: Throwable? = null,
     ) : AppError(message, cause)
 
