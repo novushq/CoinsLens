@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.novushq.coinlens"
+    namespace = "app.novushq.coinlens"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.novushq.coinlens"
+        applicationId = "app.novushq.coinlens"
         minSdk = 26
         targetSdk = 36
         versionCode = 1
@@ -19,7 +19,6 @@ android {
 
     buildTypes {
         debug {
-            applicationIdSuffix = ".debug"
             isMinifyEnabled = false
         }
         release {

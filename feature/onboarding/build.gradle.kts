@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.novushq.coinlens.feature.onboarding"
+    namespace = "app.novushq.coinlens.feature.onboarding"
     compileSdk = 36
 
     defaultConfig {

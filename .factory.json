@@ -2,7 +2,7 @@
   "app_id": "app_zecy7nd27tk8",
   "slug": "coinlens",
   "name": "CoinLens",
-  "package": "com.novushq.coinlens",
+  "package": "app.novushq.coinlens",
   "factory_api": "http://127.0.0.1:8473",
   "docs": {
     "prd": "docs/PRD.md",

@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.novushq.coinlens.navigation"
+    namespace = "app.novushq.coinlens.navigation"
     compileSdk = 36
 
     defaultConfig {

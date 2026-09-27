@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.novushq.coinlens.feature.result"
+    namespace = "app.novushq.coinlens.feature.result"
     compileSdk = 36
 
     defaultConfig {

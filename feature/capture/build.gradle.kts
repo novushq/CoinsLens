@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.novushq.coinlens.feature.capture"
+    namespace = "app.novushq.coinlens.feature.capture"
     compileSdk = 36
 
     defaultConfig {

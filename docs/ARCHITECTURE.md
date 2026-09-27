@@ -1,6 +1,6 @@
 # CoinLens — architecture
 
-Kotlin, Compose, Koin, coroutines/Flow, Room, DataStore. Package root `com.novushq.coinlens`. Business logic lives in pure-Kotlin core modules; features never import each other.
+Kotlin, Compose, Koin, coroutines/Flow, Room, DataStore. Package root `app.novushq.coinlens`. Business logic lives in pure-Kotlin core modules; features never import each other.
 
 ## Modules
 

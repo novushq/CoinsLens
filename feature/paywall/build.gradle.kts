@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.novushq.coinlens.feature.paywall"
+    namespace = "app.novushq.coinlens.feature.paywall"
     compileSdk = 36
 
     defaultConfig {

@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.novushq.coinlens.ai"
+    namespace = "app.novushq.coinlens.ai"
     compileSdk = 36
 
     defaultConfig {

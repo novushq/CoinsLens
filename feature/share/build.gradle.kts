@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.novushq.coinlens.feature.share"
+    namespace = "app.novushq.coinlens.feature.share"
     compileSdk = 36
 
     defaultConfig {
