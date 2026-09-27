@@ -28,6 +28,24 @@ sealed class AppError(
 
     data class NotFound(override val message: String = "Not found") : AppError(message)
 
+    /** HTTP 429 / quota exhausted from the AI backend. */
+    data class QuotaExceeded(
+        override val message: String = "Scan limit reached",
+        override val cause: Throwable? = null,
+    ) : AppError(message, cause)
+
+    /** Model refused the content (safety filters). */
+    data class ContentBlocked(
+        override val message: String = "Couldn't identify this image",
+        override val cause: Throwable? = null,
+    ) : AppError(message, cause)
+
+    /** Response arrived but could not be parsed into the schema. */
+    data class Parse(
+        override val message: String = "Couldn't read the result",
+        override val cause: Throwable? = null,
+    ) : AppError(message, cause)
+
     data class Validation(
         val field: String,
         override val message: String,
