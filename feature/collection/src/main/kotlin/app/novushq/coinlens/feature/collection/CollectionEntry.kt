@@ -50,6 +50,8 @@ import app.novushq.coinlens.navigation.Route
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
+import java.math.RoundingMode
+import java.util.Locale
 
 val collectionModule = module { viewModelOf(::CollectionViewModel) }
 
@@ -57,6 +59,15 @@ fun NavGraphBuilder.collectionGraph(navigator: AppNavigator) {
     composable<Route.Collection> { CollectionDestination(navigator) }
     composable<Route.Folder> { CollectionDestination(navigator) }
     composable<Route.Item> { CollectionDestination(navigator) }
+}
+
+private fun sanitizePriceInput(input: String): String {
+    val normalized = input.filter { it in '0'..'9' || it == '.' || it == ',' }
+    val decimal = normalized.indexOfAny(charArrayOf('.', ','))
+    val whole = (if (decimal < 0) normalized else normalized.substring(0, decimal)).take(10)
+    if (decimal < 0) return whole
+    val fraction = normalized.substring(decimal + 1).filter(Char::isDigit).take(2)
+    return "$whole.$fraction"
 }
 
 @Composable
@@ -178,7 +189,7 @@ private fun ItemScreen(value: ValuedItem, folders: List<Folder>, viewModel: Coll
     val current = value.item
     var grade by remember(current.id) { mutableStateOf(current.grade ?: Grade.GOOD) }
     var notes by remember(current.id) { mutableStateOf(current.gradeNotes) }
-    var price by remember(current.id) { mutableStateOf(current.purchasePrice?.let { "%.2f".format(it.cents / 100.0) }.orEmpty()) }
+ var price by remember(current.id) { mutableStateOf(current.purchasePrice?.let { "%.2f".format(Locale.US, it.cents / 100.0) }.orEmpty()) }
     var quantity by remember(current.id) { mutableStateOf(current.quantity.toString()) }
     var folderId by remember(current.id) { mutableStateOf(current.folderId) }
     var gradeMenu by remember { mutableStateOf(false) }
@@ -198,7 +209,7 @@ private fun ItemScreen(value: ValuedItem, folders: List<Folder>, viewModel: Coll
             }
         }
         item { OutlinedTextField(value = notes, onValueChange = { notes = it }, label = { Text(stringResource(R.string.collection_grade_notes)) }, modifier = Modifier.fillMaxWidth()) }
-        item { OutlinedTextField(value = price, onValueChange = { price = it.filter { ch -> ch.isDigit() || ch == '.' } }, label = { Text(stringResource(R.string.collection_purchase_price)) }, modifier = Modifier.fillMaxWidth(), singleLine = true) }
+ item { OutlinedTextField(value = price, onValueChange = { price = sanitizePriceInput(it) }, label = { Text(stringResource(R.string.collection_purchase_price)) }, modifier = Modifier.fillMaxWidth(), singleLine = true) }
         item { OutlinedTextField(value = quantity, onValueChange = { quantity = it.filter(Char::isDigit).take(4) }, label = { Text(stringResource(R.string.collection_quantity)) }, modifier = Modifier.fillMaxWidth(), singleLine = true) }
         item {
             Column {
@@ -217,7 +228,9 @@ private fun ItemScreen(value: ValuedItem, folders: List<Folder>, viewModel: Coll
             PrimaryButton(
                 text = stringResource(R.string.collection_save),
                 onClick = {
-                    val cents = price.toDoubleOrNull()?.let { (it * 100).toLong() }
+ val cents = runCatching {
+     price.toBigDecimalOrNull()?.movePointRight(2)?.setScale(0, RoundingMode.HALF_UP)?.longValueExact()
+ }.getOrNull()
                     viewModel.updateItem(current.copy(grade = grade, gradeNotes = notes, purchasePrice = cents?.let(::Money), quantity = quantity.toIntOrNull()?.coerceAtLeast(1) ?: 1, folderId = folderId))
                 }, modifier = Modifier.fillMaxWidth(),
             )
