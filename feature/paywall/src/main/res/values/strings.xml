@@ -1,5 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="paywall_title">CoinLens Pro</string>
-    <string name="paywall_action_0">Close</string>
+    <string name="paywall_collector_title">Keep your collection close</string>
+    <string name="paywall_inherited_title">Find the stories in your family coins</string>
+    <string name="paywall_detectorist_title">Keep track of every find</string>
+    <string name="paywall_collector_benefit">Unlimited identifications, folders, and condition notes for the coins you collect.</string>
+    <string name="paywall_inherited_benefit">Compare honest value ranges and share clear results with your family.</string>
+    <string name="paywall_detectorist_benefit">Identify worn coins in the field and keep a tidy log of your finds.</string>
+    <string name="paywall_plans">Choose a plan</string>
+    <string name="paywall_weekly">Weekly</string>
+    <string name="paywall_weekly_price">$4.99 / week · demo</string>
+    <string name="paywall_annual">Annual</string>
+    <string name="paywall_annual_price">$29.99 / year · demo</string>
+    <string name="paywall_trial">3-day trial · demo</string>
+    <string name="paywall_lifetime">Lifetime</string>
+    <string name="paywall_lifetime_price">$59.99 once · demo</string>
+    <string name="paywall_selected">Selected</string>
+    <string name="paywall_benefits">No ads. Unlimited scans. Local collection folders.</string>
+    <string name="paywall_demo_notice">Demo checkout only. Store billing is not configured, and these sample prices are not purchase offers.</string>
+    <string name="paywall_continue">Continue with demo plan</string>
+    <string name="paywall_pro_active">CoinLens Pro active</string>
+    <string name="paywall_restore">Restore purchases</string>
+    <string name="paywall_restored">Demo entitlement is active.</string>
+    <string name="paywall_nothing_to_restore">No purchases found for this account.</string>
+    <string name="paywall_reward">Watch demo ad · unlock 1 scan</string>
+    <string name="paywall_bonus_granted">One extra scan is ready.</string>
+    <string name="paywall_close">Close</string>
+    <string name="paywall_later">Maybe later</string>
 </resources>

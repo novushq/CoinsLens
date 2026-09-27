@@ -1,9 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="collection_collection_title">Collection</string>
-    <string name="collection_collection_action_0">Back</string>
-    <string name="collection_folder_title">Folder</string>
-    <string name="collection_folder_action_0">Back</string>
-    <string name="collection_item_title">Item</string>
-    <string name="collection_item_action_0">Back</string>
+    <string name="collection_title">Your cabinet</string>
+    <string name="collection_estimated_value">Estimated collection value</string>
+    <string name="collection_items">%1$d pieces</string>
+    <string name="collection_cost_basis">Cost basis</string>
+    <string name="collection_estimate_vs_cost">Estimate vs cost</string>
+    <string name="collection_folders">Folders</string>
+    <string name="collection_no_folders">A folder helps keep related finds together.</string>
+    <string name="collection_create_folder">New folder</string>
+    <string name="collection_folder_name">Folder name</string>
+    <string name="collection_create">Create</string>
+    <string name="collection_cancel">Cancel</string>
+    <string name="collection_unsorted">Unsorted</string>
+    <string name="collection_back">Back</string>
+    <string name="collection_rename">Rename</string>
+    <string name="collection_delete">Delete</string>
+    <string name="collection_sort_value">Sort by value</string>
+    <string name="collection_sort_date">Sort by date</string>
+    <string name="collection_sort_name">Sort by name</string>
+    <string name="collection_empty_folder">No pieces in this folder yet.</string>
+    <string name="collection_delete_folder_title">Delete “%1$s”?</string>
+    <string name="collection_delete_folder_body">Its %1$d pieces will move to Unsorted.</string>
+    <string name="collection_save">Save changes</string>
+    <string name="collection_open_scan">View identification</string>
+    <string name="collection_condition">Condition</string>
+    <string name="collection_grade">Grade · %1$s</string>
+    <string name="collection_grade_notes">Condition notes</string>
+    <string name="collection_purchase_price">Purchase price (USD)</string>
+    <string name="collection_quantity">Quantity</string>
+    <string name="collection_item_value">Estimated value at selected grade</string>
+    <string name="collection_share">Share coin card</string>
+    <string name="collection_delete_item_title">Remove this piece?</string>
+    <string name="collection_delete_item_body">This removes it from your cabinet. Original identification stays in Recent scans.</string>
 </resources>

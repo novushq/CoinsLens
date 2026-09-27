@@ -1,7 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="home_title">Home</string>
-    <string name="home_action_0">Scan a coin</string>
-    <string name="home_action_1">Collection</string>
-    <string name="home_action_2">Settings</string>
+    <string name="home_title">CoinLens</string>
+    <string name="home_settings">Settings</string>
+    <string name="home_eyebrow">A quieter way to collect</string>
+    <string name="home_headline">Every coin has a story.</string>
+    <string name="home_intro">Find out what you’re holding, then keep the details close.</string>
+    <string name="home_free_badge">%1$d FREE SCANS LEFT</string>
+    <string name="home_pro_badge">PRO MEMBER</string>
+    <string name="home_scan_title">Start with one coin</string>
+    <string name="home_scan_description">Take a clear photo. Your first result has no ads.</string>
+    <string name="home_scan_action">Identify a coin</string>
+    <string name="home_quota_used">Your free scan is used. Visit your plan to keep identifying.</string>
+    <string name="home_collection">Your cabinet</string>
+    <string name="home_piece_count">%1$d pieces</string>
+    <string name="home_no_estimate">COLLECTION VALUE</string>
+    <string name="home_total_estimate">ESTIMATED VALUE</string>
+    <string name="home_cabinet_empty">Your collection starts here</string>
+    <string name="home_recent">Recent scans</string>
+    <string name="home_recent_empty">Your first identification will appear here.</string>
 </resources>
