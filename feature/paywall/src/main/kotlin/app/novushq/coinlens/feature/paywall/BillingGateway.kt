@@ -191,36 +191,46 @@ class AdMobRewardedAdGateway(
     private val appContext = context.applicationContext
     override val isDemo = false
 
-    override suspend fun show(activity: Activity): AppResult<Boolean> = try {
-        withContext(dispatchers.io) { com.google.android.gms.ads.MobileAds.initialize(appContext) }
-        withTimeout(60_000) {
-            suspendCancellableCoroutine { continuation ->
-                com.google.android.gms.ads.rewarded.RewardedAd.load(
-                    appContext,
-                    adUnitId,
-                    com.google.android.gms.ads.AdRequest.Builder().build(),
-                    object : com.google.android.gms.ads.rewarded.RewardedAdLoadCallback() {
-                        override fun onAdLoaded(ad: com.google.android.gms.ads.rewarded.RewardedAd) {
-                            ad.fullScreenContentCallback = object : com.google.android.gms.ads.FullScreenContentCallback() {
-                                override fun onAdDismissedFullScreenContent() {
-                                    if (continuation.isActive) continuation.resume(AppResult.Success(false))
-                                }
-                                override fun onAdFailedToShowFullScreenContent(error: com.google.android.gms.ads.AdError) {
-                                    if (continuation.isActive) continuation.resume(AppResult.Failure(AppError.Network(error.message)))
-                                }
+    override suspend fun show(activity: Activity): AppResult<Boolean> {
+        return try {
+            withContext(dispatchers.io) { com.google.android.gms.ads.MobileAds.initialize(appContext) }
+            val loaded = withTimeout(60_000) {
+                suspendCancellableCoroutine<AppResult<com.google.android.gms.ads.rewarded.RewardedAd>> { continuation ->
+                    com.google.android.gms.ads.rewarded.RewardedAd.load(
+                        appContext,
+                        adUnitId,
+                        com.google.android.gms.ads.AdRequest.Builder().build(),
+                        object : com.google.android.gms.ads.rewarded.RewardedAdLoadCallback() {
+                            override fun onAdLoaded(ad: com.google.android.gms.ads.rewarded.RewardedAd) {
+                                if (continuation.isActive) continuation.resume(AppResult.Success(ad))
                             }
-                            ad.show(activity) {
-                                if (continuation.isActive) continuation.resume(AppResult.Success(true))
+
+                            override fun onAdFailedToLoad(error: com.google.android.gms.ads.LoadAdError) {
+                                if (continuation.isActive) continuation.resume(AppResult.Failure(AppError.Network(error.message)))
                             }
+                        },
+                    )
+                }
+            }
+            when (loaded) {
+                is AppResult.Failure -> loaded
+                is AppResult.Success -> suspendCancellableCoroutine<AppResult<Boolean>> { continuation ->
+                    loaded.data.fullScreenContentCallback = object : com.google.android.gms.ads.FullScreenContentCallback() {
+                        override fun onAdDismissedFullScreenContent() {
+                            if (continuation.isActive) continuation.resume(AppResult.Success(false))
                         }
-                        override fun onAdFailedToLoad(error: com.google.android.gms.ads.LoadAdError) {
+
+                        override fun onAdFailedToShowFullScreenContent(error: com.google.android.gms.ads.AdError) {
                             if (continuation.isActive) continuation.resume(AppResult.Failure(AppError.Network(error.message)))
                         }
-                    },
-                )
+                    }
+                    loaded.data.show(activity) {
+                        if (continuation.isActive) continuation.resume(AppResult.Success(true))
+                    }
+                }
             }
+        } catch (_: TimeoutCancellationException) {
+            AppResult.Failure(AppError.Timeout())
         }
-    } catch (_: TimeoutCancellationException) {
-        AppResult.Failure(AppError.Timeout())
     }
 }
