@@ -1,5 +1,7 @@
 package app.novushq.coinlens.domain
 
+import app.novushq.coinlens.testing.*
+
 import app.novushq.coinlens.common.AppError
 import app.novushq.coinlens.model.CollectionItem
 import app.novushq.coinlens.model.CollectionSummary

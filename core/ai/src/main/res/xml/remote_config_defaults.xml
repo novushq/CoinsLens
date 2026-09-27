@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<defaultsMap>
+    <entry>
+        <key>model_name</key>
+        <value>gemini-3.8-flash</value>
+    </entry>
+</defaultsMap>

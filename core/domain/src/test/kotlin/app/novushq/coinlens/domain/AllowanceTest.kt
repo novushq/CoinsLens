@@ -1,5 +1,7 @@
 package app.novushq.coinlens.domain
 
+import app.novushq.coinlens.testing.*
+
 import app.novushq.coinlens.model.Persona
 import app.novushq.coinlens.model.ScanAllowance
 import kotlinx.coroutines.flow.first

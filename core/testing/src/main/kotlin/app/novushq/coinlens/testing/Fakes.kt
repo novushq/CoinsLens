@@ -1,7 +1,12 @@
-package app.novushq.coinlens.domain
+package app.novushq.coinlens.testing
 
 import app.novushq.coinlens.common.AppError
 import app.novushq.coinlens.common.AppResult
+import app.novushq.coinlens.domain.CollectionRepository
+import app.novushq.coinlens.domain.EntitlementRepository
+import app.novushq.coinlens.domain.ImageStore
+import app.novushq.coinlens.domain.PreferencesRepository
+import app.novushq.coinlens.domain.ScanRepository
 import app.novushq.coinlens.identify.IdentifyEngine
 import app.novushq.coinlens.identify.IdentifySpec
 import app.novushq.coinlens.identify.ImageInput
@@ -41,6 +46,7 @@ fun coin(
 
 class FakeImageStore : ImageStore {
     val files = mutableMapOf<String, ByteArray>()
+    val deleted = mutableListOf<String>()
     var failOnSave = 0 // 1-based index of the save call that fails; 0 = never
     private var calls = 0
     override suspend fun save(bytes: ByteArray, nameHint: String): AppResult<String> {
@@ -54,6 +60,7 @@ class FakeImageStore : ImageStore {
         files[path]?.let { AppResult.Success(it) } ?: AppResult.Failure(AppError.NotFound())
     override suspend fun delete(path: String): AppResult<Unit> {
         files.remove(path)
+        deleted += path
         return AppResult.Success(Unit)
     }
 }

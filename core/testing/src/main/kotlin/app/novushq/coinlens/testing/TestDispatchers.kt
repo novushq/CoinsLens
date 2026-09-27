@@ -1,4 +1,6 @@
-package app.novushq.coinlens.common
+package app.novushq.coinlens.testing
+
+import app.novushq.coinlens.common.DispatcherProvider
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
