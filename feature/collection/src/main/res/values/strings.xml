@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="collection_title">Collection</string>
+    <string name="collection_collection_title">Collection</string>
+    <string name="collection_collection_action_0">Back</string>
     <string name="collection_folder_title">Folder</string>
+    <string name="collection_folder_action_0">Back</string>
     <string name="collection_item_title">Item</string>
+    <string name="collection_item_action_0">Back</string>
 </resources>

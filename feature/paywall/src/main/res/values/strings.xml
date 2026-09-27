@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="paywall_title">CoinLens Pro</string>
+    <string name="paywall_action_0">Close</string>
 </resources>

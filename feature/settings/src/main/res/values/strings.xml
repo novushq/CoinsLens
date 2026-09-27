@@ -1,24 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_title">Settings</string>
-    <string name="settings_plan">Your plan</string>
-    <string name="settings_pro">CoinLens Pro is active. Your scans are unlimited.</string>
-    <string name="settings_free">Free plan · %1$d scans available</string>
-    <string name="settings_manage_plan">View plans</string>
-    <string name="settings_upgrade">Explore CoinLens Pro</string>
-    <string name="settings_restore">Restore purchases</string>
-    <string name="settings_restore_success">Purchases restored.</string>
-    <string name="settings_restore_empty">No purchases found for this account.</string>
-    <string name="settings_manage_subscription">Manage subscription</string>
-    <string name="settings_preferences">Your preferences</string>
-    <string name="settings_persona">Collector type · %1$s</string>
-    <string name="settings_change_persona">Change collector type</string>
-    <string name="settings_collector">Collector</string>
-    <string name="settings_inherited">Inherited coins</string>
-    <string name="settings_detectorist">Metal detecting</string>
-    <string name="settings_about">About estimates</string>
-    <string name="settings_ai_demo">Identification engine · sample catalogue (%1$s)</string>
-    <string name="settings_ai_live">Identification engine · Gemini (%1$s)</string>
-    <string name="settings_disclaimer">Values are estimates only. Condition, authenticity, and market demand affect value. Get an in-hand appraisal before selling.</string>
-    <string name="settings_done">Done</string>
+    <string name="settings_action_0">Back</string>
 </resources>

@@ -1,19 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="onboarding_title">What brings you here?</string>
-    <string name="onboarding_kicker">COINLENS · A FIELD GUIDE</string>
-    <string name="onboarding_intro">We’ll tailor the details to what you collect. No accounts, ads before your first result, or guesswork disguised as certainty.</string>
-    <string name="onboarding_persona_prompt">I’m here to…</string>
-    <string name="onboarding_collector">Build a collection</string>
-    <string name="onboarding_inherited">Understand coins I inherited</string>
-    <string name="onboarding_detectorist">Record what I find</string>
-    <string name="onboarding_camera_kicker">ONE CLEAR PHOTO</string>
-    <string name="onboarding_camera_title">Let’s look closer.</string>
-    <string name="onboarding_camera_body">A well-lit photo of the front helps us read the date, mint mark, and small details. You can add the reverse too.</string>
-    <string name="onboarding_privacy">Choose a photo when you’re ready. CoinLens keeps your collection on this device.</string>
-    <string name="onboarding_continue">Continue</string>
-    <string name="onboarding_start">Choose a coin photo</string>
-    <string name="onboarding_skip">Skip for now</string>
-    <string name="onboarding_step">%1$d OF 2</string>
-    <string name="onboarding_save_error">Could not save this choice. Try again.</string>
+    <string name="onboarding_title">Welcome to CoinLens</string>
+    <string name="onboarding_action_0">Get started</string>
 </resources>

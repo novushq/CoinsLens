@@ -1,25 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="result_title">Your coin</string>
-    <string name="result_unknown_photo">Unrecognized coin photo</string>
-    <string name="result_unrecognized">We couldn’t identify this one</string>
-    <string name="result_value">Estimated value</string>
-    <string name="result_details">Details from the photo</string>
-    <string name="result_denomination">Denomination</string>
-    <string name="result_composition">Composition</string>
-    <string name="result_rarity">Rarity</string>
-    <string name="result_weight">Weight</string>
-    <string name="result_diameter">Diameter</string>
-    <string name="result_grams">%.1f g</string>
-    <string name="result_millimeters">%.1f mm</string>
-    <string name="result_hints">Details worth checking</string>
-    <string name="result_possible_hint">Possible %1$s</string>
-    <string name="result_where_to_look">Look here: %1$s</string>
-    <string name="result_alternatives">Could also be</string>
-    <string name="result_add">Add to your cabinet</string>
-    <string name="result_added">Added to cabinet</string>
-    <string name="result_add_error">Couldn’t save this coin. Try again.</string>
-    <string name="result_share">Share this result</string>
-    <string name="result_scan_another">Identify another</string>
-    <string name="result_try_again">Try another photo</string>
+    <string name="result_title">Result</string>
+    <string name="result_action_0">Back</string>
 </resources>
