@@ -15,6 +15,10 @@ kotlin {
 dependencies {
     api(project(":core:model"))
     api(project(":core:common"))
+    api(project(":core:identify"))
+    implementation(libs.koin.core)
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.serialization.json)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

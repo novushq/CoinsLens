@@ -89,3 +89,9 @@ data class ValuedItem(
     val item: CollectionItem,
     val identification: CoinIdentification?,
 )
+
+/** Folder with its valued rows, for the folder screen. */
+data class FolderDetail(
+    val folder: Folder,
+    val items: List<ValuedItem> = emptyList(),
+)
