@@ -43,6 +43,7 @@ import app.novushq.coinlens.model.CollectionSummary
 import app.novushq.coinlens.model.ScanAllowance
 import app.novushq.coinlens.model.ValueRange
 import app.novushq.coinlens.navigation.AppNavigator
+import app.novushq.coinlens.navigation.PaywallSource
 import app.novushq.coinlens.navigation.Route
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.module.dsl.viewModelOf
@@ -59,7 +60,11 @@ fun NavGraphBuilder.homeGraph(navigator: AppNavigator) {
         HomeContent(
             state = state,
             onRetry = viewModel::retry,
-            onScan = { navigator.navigate(Route.Capture) },
+            onScan = { allowance ->
+                navigator.navigate(
+                    if (allowance.canScan) Route.Capture else Route.Paywall(PaywallSource.QUOTA),
+                )
+            },
             onSettings = { navigator.navigate(Route.Settings) },
             onOpenScan = { navigator.navigate(Route.Result(it)) },
         )
@@ -70,7 +75,7 @@ fun NavGraphBuilder.homeGraph(navigator: AppNavigator) {
 private fun HomeContent(
     state: UiState<HomeData>,
     onRetry: () -> Unit,
-    onScan: () -> Unit,
+    onScan: (ScanAllowance) -> Unit,
     onSettings: () -> Unit,
     onOpenScan: (String) -> Unit,
 ) {
@@ -198,7 +203,7 @@ private fun HomeContent(
 }
 
 @Composable
-private fun ScanInvitation(onScan: () -> Unit, allowance: ScanAllowance) {
+private fun ScanInvitation(onScan: (ScanAllowance) -> Unit, allowance: ScanAllowance) {
     Surface(
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.primaryContainer,
@@ -239,10 +244,10 @@ private fun ScanInvitation(onScan: () -> Unit, allowance: ScanAllowance) {
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
             PrimaryButton(
-                text = stringResource(R.string.home_scan_action),
-                onClick = onScan,
-                modifier = Modifier.fillMaxWidth(),
-                enabled = allowance.canScan,
+            text = stringResource(if (allowance.canScan) R.string.home_scan_action else R.string.home_view_plans),
+            onClick = { onScan(allowance) },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = true,
             )
             if (!allowance.canScan) {
                 Text(
@@ -309,7 +314,7 @@ private fun HomePreview() {
                 HomeData(CollectionSummary(), ScanAllowance(), emptyList()),
             ),
             onRetry = {},
-            onScan = {},
+        onScan = { _ -> },
             onSettings = {},
             onOpenScan = {},
         )

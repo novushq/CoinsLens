@@ -10,6 +10,7 @@
     <string name="home_scan_title">Start with one coin</string>
     <string name="home_scan_description">Take a clear photo. Your first result has no ads.</string>
     <string name="home_scan_action">Identify a coin</string>
+    <string name="home_view_plans">View plans</string>
     <string name="home_quota_used">Your free scan is used. Visit your plan to keep identifying.</string>
     <string name="home_collection">Your cabinet</string>
     <string name="home_piece_count">%1$d pieces</string>
