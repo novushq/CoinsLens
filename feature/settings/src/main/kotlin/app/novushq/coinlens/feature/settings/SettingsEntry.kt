@@ -1,7 +1,6 @@
 package app.novushq.coinlens.feature.settings
 
 import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,7 +24,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
@@ -64,7 +65,7 @@ private fun SettingsContent(navigator: AppNavigator) {
         .collectAsStateWithLifecycle(initialValue = app.novushq.coinlens.model.ScanAllowance())
     val isPro by entitlements.isPro.collectAsStateWithLifecycle(initialValue = false)
     var editPersona by remember { mutableStateOf(false) }
-    var message by remember { mutableStateOf("") }
+    var message by remember { mutableStateOf<Int?>(null) }
 
     Scaffold(containerColor = MaterialTheme.colorScheme.background) { insets ->
         Column(
@@ -80,7 +81,7 @@ private fun SettingsContent(navigator: AppNavigator) {
                 SectionHeader(title = stringResource(R.string.settings_plan))
                 Text(
                     text = if (isPro) stringResource(R.string.settings_pro) else {
-                        stringResource(R.string.settings_free, allowance.freeRemaining + allowance.bonusRemaining)
+                        pluralStringResource(R.plurals.settings_free, allowance.freeRemaining + allowance.bonusRemaining, allowance.freeRemaining + allowance.bonusRemaining)
                     },
                     style = MaterialTheme.typography.bodyLarge,
                 )
@@ -93,21 +94,17 @@ private fun SettingsContent(navigator: AppNavigator) {
                 TextButton(
                     onClick = {
                         scope.launch {
-                            message = if (entitlements.restore().getOrNull() == true) {
-                                context.getString(R.string.settings_restore_success)
-                            } else {
-                                context.getString(R.string.settings_restore_empty)
-                            }
+                        message = if (entitlements.restore().getOrNull() == true) R.string.settings_restore_success else R.string.settings_restore_empty
                         }
                     },
                 ) { Text(stringResource(R.string.settings_restore)) }
                 TextButton(
                     onClick = {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/account/subscriptions"))
+                        val intent = Intent(Intent.ACTION_VIEW, "https://play.google.com/store/account/subscriptions".toUri())
                         context.startActivity(intent)
                     },
                 ) { Text(stringResource(R.string.settings_manage_subscription)) }
-                if (message.isNotBlank()) Text(message, style = MaterialTheme.typography.bodyMedium)
+            message?.let { Text(stringResource(it), style = MaterialTheme.typography.bodyMedium) }
             }
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 SectionHeader(title = stringResource(R.string.settings_preferences))

@@ -79,6 +79,7 @@ private fun ShareContent(state: UiState<ScanRecord>, navigator: AppNavigator) {
     var busy by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<Int?>(null) }
     val palette = MaterialTheme.colorScheme
+    val chooserTitle = stringResource(R.string.share_chooser)
     val sharePalette = SharePalette(
         background = (if (darkCard) palette.inverseSurface else palette.surface).toArgb(),
         surface = (if (darkCard) palette.surfaceContainerHighest else palette.surface).toArgb(),
@@ -88,7 +89,7 @@ private fun ShareContent(state: UiState<ScanRecord>, navigator: AppNavigator) {
         outline = palette.outlineVariant.toArgb(),
     )
 
-    fun export(record: ScanRecord, saveToPhotos: Boolean) {
+    fun export(record: ScanRecord, saveToPhotos: Boolean, chooserTitle: String) {
         scope.launch {
             busy = true
             message = null
@@ -125,7 +126,7 @@ private fun ShareContent(state: UiState<ScanRecord>, navigator: AppNavigator) {
                         putExtra(Intent.EXTRA_STREAM, uri)
                         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     }
-                    context.startActivity(Intent.createChooser(send, context.getString(R.string.share_chooser)))
+                    context.startActivity(Intent.createChooser(send, chooserTitle))
                 }
             } catch (_: IOException) {
                 message = R.string.share_error
@@ -163,7 +164,7 @@ private fun ShareContent(state: UiState<ScanRecord>, navigator: AppNavigator) {
                 item {
                     PrimaryButton(
                         text = stringResource(if (busy) R.string.share_working else R.string.share_action),
-                        onClick = { export(record, false) },
+                        onClick = { export(record, false, chooserTitle) },
                         modifier = Modifier.fillMaxWidth(),
                         loading = busy,
                     )
@@ -171,7 +172,7 @@ private fun ShareContent(state: UiState<ScanRecord>, navigator: AppNavigator) {
                 item {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                         OutlinedButton(
-                            onClick = { export(record, true) },
+                            onClick = { export(record, true, chooserTitle) },
                             modifier = Modifier.fillMaxWidth(),
                             enabled = !busy,
                         ) { Text(stringResource(R.string.share_save)) }

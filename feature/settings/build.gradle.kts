@@ -42,6 +42,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.koin.androidx.compose)
     implementation(libs.coil.compose)
+    implementation(libs.androidx.core.ktx)
     implementation(project(":core:ai"))
     debugImplementation(libs.androidx.ui.tooling)
     testImplementation(libs.junit)
