@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#FF006C4C</color>
+    <!-- Brand colours for launcher icon and splash; in-app colours live in :core:designsystem. -->
+    <color name="ic_launcher_background">#FFF6EBD6</color>
+    <color name="brass">#FF8C6A2F</color>
+    <color name="brass_light">#FFE6C188</color>
+    <color name="brass_dark">#FF5A4217</color>
+    <color name="lens_glass">#66FFF8F3</color>
+    <color name="window_background">#FFFFF8F3</color>
+    <color name="splash_background">#FFFFF8F3</color>
 </resources>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="capture_title">A closer look</string>
+    <string name="capture_front_prompt">Photograph the front in even light. Keep the full coin inside the frame.</string>
+    <string name="capture_reverse_prompt">Add the reverse if you can. The front is enough to begin.</string>
+    <string name="capture_front_photo">Front of the coin</string>
+    <string name="capture_reverse_photo">Reverse of the coin</string>
+    <string name="capture_choose_front">Choose front photo</string>
+    <string name="capture_choose_reverse">Choose reverse photo</string>
+    <string name="capture_camera">Take a photo</string>
+    <string name="capture_add_reverse">Add reverse</string>
+    <string name="capture_front_side">Use front</string>
+    <string name="capture_identify">Identify this coin</string>
+    <string name="capture_photo_guidance">Avoid glare and shadows. Your photos stay in this app’s private storage.</string>
+    <string name="capture_photo_error">Couldn’t read that photo. Choose another or take a new one.</string>
+</resources>

@@ -7,4 +7,8 @@
     <path
         android:fillColor="@color/ic_launcher_background"
         android:pathData="M0,0h108v108h-108z" />
+    <!-- Soft warm vignette so the brass coin reads as metal on parchment. -->
+    <path
+        android:fillColor="#14A07A3A"
+        android:pathData="M54,54m-50,0a50,50 0,1 1,100 0a50,50 0,1 1,-100 0" />
 </vector>

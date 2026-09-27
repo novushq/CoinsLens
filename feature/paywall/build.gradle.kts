@@ -50,4 +50,15 @@ dependencies {
     testImplementation(libs.turbine)
     testImplementation(libs.koin.test)
     testImplementation(libs.koin.test.junit4)
+    testImplementation(project(":core:testing"))
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.ui.test.junit4)
+    debugImplementation(libs.androidx.ui.test.manifest)
+}
+
+android {
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
 }

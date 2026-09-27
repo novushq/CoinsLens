@@ -1,12 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Stylised coin with a loupe. All shapes sit inside the 66dp adaptive-icon safe zone. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <group android:translateX="0" android:translateY="0">
-        <path
-            android:fillColor="#FFFFFFFF"
-            android:pathData="M38,34h8v24a8,8 0 0 0 16,0v-24h8v24a16,16 0 0 1 -32,0z" />
-    </group>
+    <!-- Coin body -->
+    <path
+        android:fillColor="@color/brass"
+        android:pathData="M48,48m-20,0a20,20 0,1 1,40 0a20,20 0,1 1,-40 0" />
+    <!-- Rim -->
+    <path
+        android:strokeColor="@color/brass_light"
+        android:strokeWidth="1.6"
+        android:fillColor="#00000000"
+        android:pathData="M48,48m-16,0a16,16 0,1 1,32 0a16,16 0,1 1,-32 0" />
+    <!-- Profile relief: a simple bust silhouette -->
+    <path
+        android:fillColor="@color/brass_light"
+        android:pathData="M45,37c4,0 7,3 7,7c0,2 -1,3.5 -2,4.5l2.5,3.5l-2.5,0.8c0.3,1.6 -0.2,3 -1.8,3.4l0.6,2.8h-9.8c0.6,-3 0.4,-5.6 -0.8,-8.2c-1.2,-2.6 -1.6,-5.2 -0.6,-8.2c1,-3.4 3.8,-5.6 7.4,-5.6z" />
+    <!-- Loupe lens -->
+    <path
+        android:fillColor="@color/lens_glass"
+        android:strokeColor="@color/brass_dark"
+        android:strokeWidth="3"
+        android:pathData="M62,62m-11,0a11,11 0,1 1,22 0a11,11 0,1 1,-22 0" />
+    <!-- Lens glint -->
+    <path
+        android:strokeColor="#CCFFFFFF"
+        android:strokeWidth="1.6"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M56,58a7,7 0,0 1,5 -3.5" />
+    <!-- Handle -->
+    <path
+        android:strokeColor="@color/brass_dark"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M70,70L76.5,76.5" />
 </vector>
