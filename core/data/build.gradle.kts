@@ -43,6 +43,9 @@ dependencies {
     testImplementation(libs.turbine)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
+    testImplementation(libs.room.testing)
+    testImplementation(libs.koin.test)
+    testImplementation(project(":core:testing"))
 }
 
 room {
