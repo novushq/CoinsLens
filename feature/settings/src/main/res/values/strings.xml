@@ -12,7 +12,11 @@
     <string name="settings_restore">Restore purchases</string>
     <string name="settings_restore_success">Purchases restored.</string>
     <string name="settings_restore_empty">No purchases found for this account.</string>
+    <string name="settings_restore_error">Could not restore purchases. Check your connection and try again.</string>
     <string name="settings_manage_subscription">Manage subscription</string>
+    <string name="settings_subscription_error">Could not open Google Play subscriptions.</string>
+    <string name="settings_terms">Terms of service</string>
+    <string name="settings_privacy">Privacy policy</string>
     <string name="settings_preferences">Your preferences</string>
     <string name="settings_persona">Collector type · %1$s</string>
     <string name="settings_change_persona">Change collector type</string>

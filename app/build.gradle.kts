@@ -10,6 +10,17 @@ if (hasGoogleServices) {
     pluginManager.apply(libs.plugins.google.services.get().pluginId)
 }
 val aiMode = if (hasGoogleServices && providers.gradleProperty("coinlens.ai").orNull != "fake") "firebase" else "fake"
+val admobAppId = providers.gradleProperty("admob.appId")
+    .orElse(providers.environmentVariable("ADMOB_APP_ID"))
+    .getOrElse("ca-app-pub-3940256099942544~3347511713")
+val releaseStoreFile = providers.environmentVariable("COINLENS_STORE_FILE").orNull
+val releaseStorePassword = providers.environmentVariable("COINLENS_STORE_PASSWORD").orNull
+val releaseKeyAlias = providers.environmentVariable("COINLENS_KEY_ALIAS").orNull
+val releaseKeyPassword = providers.environmentVariable("COINLENS_KEY_PASSWORD").orNull
+val releaseSigningValues = listOf(releaseStoreFile, releaseStorePassword, releaseKeyAlias, releaseKeyPassword)
+require(releaseSigningValues.all { it.isNullOrBlank() } || releaseSigningValues.all { !it.isNullOrBlank() }) {
+    "Set all four COINLENS signing environment variables, or leave all unset."
+}
 
 android {
     namespace = "app.novushq.coinlens"
@@ -22,7 +33,19 @@ android {
         versionCode = 1
         versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        manifestPlaceholders["admobAppId"] = admobAppId
         buildConfigField("String", "AI_MODE", "\"$aiMode\"")
+    }
+
+    signingConfigs {
+        create("release") {
+            if (!releaseStoreFile.isNullOrBlank()) {
+                storeFile = file(releaseStoreFile)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
     }
 
     buildTypes {
@@ -32,6 +55,7 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            if (!releaseStoreFile.isNullOrBlank()) signingConfig = signingConfigs.getByName("release")
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }

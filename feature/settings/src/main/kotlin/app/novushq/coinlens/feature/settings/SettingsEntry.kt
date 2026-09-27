@@ -94,17 +94,30 @@ private fun SettingsContent(navigator: AppNavigator) {
                 TextButton(
                     onClick = {
                         scope.launch {
-                        message = if (entitlements.restore().getOrNull() == true) R.string.settings_restore_success else R.string.settings_restore_empty
+                            message = when (val result = entitlements.restore()) {
+                                is app.novushq.coinlens.common.AppResult.Success -> if (result.data) {
+                                    R.string.settings_restore_success
+                                } else R.string.settings_restore_empty
+                                is app.novushq.coinlens.common.AppResult.Failure -> R.string.settings_restore_error
+                            }
                         }
                     },
                 ) { Text(stringResource(R.string.settings_restore)) }
                 TextButton(
                     onClick = {
                         val intent = Intent(Intent.ACTION_VIEW, "https://play.google.com/store/account/subscriptions".toUri())
-                        context.startActivity(intent)
+                        runCatching { context.startActivity(intent) }.onFailure { message = R.string.settings_subscription_error }
                     },
                 ) { Text(stringResource(R.string.settings_manage_subscription)) }
-            message?.let { Text(stringResource(it), style = MaterialTheme.typography.bodyMedium) }
+                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                    if (BuildConfig.TERMS_URL.isNotBlank()) TextButton(onClick = { context.openUrl(BuildConfig.TERMS_URL) }) {
+                        Text(stringResource(R.string.settings_terms))
+                    }
+                    if (BuildConfig.PRIVACY_URL.isNotBlank()) TextButton(onClick = { context.openUrl(BuildConfig.PRIVACY_URL) }) {
+                        Text(stringResource(R.string.settings_privacy))
+                    }
+                }
+                message?.let { Text(stringResource(it), style = MaterialTheme.typography.bodyMedium) }
             }
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 SectionHeader(title = stringResource(R.string.settings_preferences))
@@ -159,4 +172,8 @@ private fun personaLabel(persona: Persona): Int = when (persona) {
     Persona.COLLECTOR -> R.string.settings_collector
     Persona.INHERITED -> R.string.settings_inherited
     Persona.DETECTORIST -> R.string.settings_detectorist
+}
+
+private fun android.content.Context.openUrl(url: String) {
+    runCatching { startActivity(Intent(Intent.ACTION_VIEW, url.toUri())) }
 }
