@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="collection_title">Your cabinet</string>
+    <string name="collection_first_scan">Scan your first coin</string>
     <string name="collection_estimated_value">Estimated collection value</string>
     <string name="collection_items">%1$d pieces</string>
     <string name="collection_cost_basis">Cost basis</string>

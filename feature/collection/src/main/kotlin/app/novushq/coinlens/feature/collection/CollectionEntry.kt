@@ -83,6 +83,13 @@ private fun CollectionScreen(data: CollectionScreenData, viewModel: CollectionVi
         verticalArrangement = Arrangement.spacedBy(Spacing.lg),
     ) {
         item { Text(stringResource(R.string.collection_title), style = MaterialTheme.typography.headlineMedium) }
+        if (data.summary.itemCount == 0) item {
+            PrimaryButton(
+                text = stringResource(R.string.collection_first_scan),
+                onClick = { navigator.navigate(Route.Capture) },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
         item {
             Card {
                 Column(Modifier.padding(Spacing.lg), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
@@ -122,7 +129,7 @@ private fun CollectionScreen(data: CollectionScreenData, viewModel: CollectionVi
         title = { Text(stringResource(R.string.collection_create_folder)) },
         text = { OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text(stringResource(R.string.collection_folder_name)) }, singleLine = true) },
         confirmButton = {
-            TextButton(onClick = { viewModel.createFolder(name); name = ""; newFolder = false }) { Text(stringResource(R.string.collection_create)) }
+            TextButton(onClick = { viewModel.createFolder(name); name = ""; newFolder = false }, enabled = name.isNotBlank()) { Text(stringResource(R.string.collection_create)) }
         },
         dismissButton = { TextButton(onClick = { newFolder = false }) { Text(stringResource(R.string.collection_cancel)) } },
     )
@@ -154,7 +161,7 @@ private fun FolderScreen(folder: Folder, items: List<ValuedItem>, viewModel: Col
     if (editName) AlertDialog(
         onDismissRequest = { editName = false }, title = { Text(stringResource(R.string.collection_rename)) },
         text = { OutlinedTextField(value = name, onValueChange = { name = it }, singleLine = true, label = { Text(stringResource(R.string.collection_folder_name)) }) },
-        confirmButton = { TextButton(onClick = { viewModel.renameFolder(folder.id, name); editName = false }) { Text(stringResource(R.string.collection_save)) } },
+        confirmButton = { TextButton(onClick = { viewModel.renameFolder(folder.id, name); editName = false }, enabled = name.isNotBlank()) { Text(stringResource(R.string.collection_save)) } },
         dismissButton = { TextButton(onClick = { editName = false }) { Text(stringResource(R.string.collection_cancel)) } },
     )
     if (confirmDelete) AlertDialog(
