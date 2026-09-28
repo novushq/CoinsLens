@@ -5,6 +5,13 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+val termsUrl = providers.gradleProperty("coinlens.termsUrl")
+    .orElse(providers.environmentVariable("COINLENS_TERMS_URL"))
+    .getOrElse("")
+val privacyUrl = providers.gradleProperty("coinlens.privacyUrl")
+    .orElse(providers.environmentVariable("COINLENS_PRIVACY_URL"))
+    .getOrElse("")
+
 android {
     namespace = "app.novushq.coinlens.feature.settings"
     compileSdk = 36
@@ -13,13 +20,16 @@ android {
         minSdk = 26
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
+        buildConfigField("String", "TERMS_URL", "\"$termsUrl\"")
+        buildConfigField("String", "PRIVACY_URL", "\"$privacyUrl\"")
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    buildFeatures {
-        compose = true
+ buildFeatures {
+ compose = true
+ buildConfig = true
     }
 }
 
@@ -42,6 +52,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.koin.androidx.compose)
     implementation(libs.coil.compose)
+    implementation(libs.androidx.core.ktx)
     implementation(project(":core:ai"))
     debugImplementation(libs.androidx.ui.tooling)
     testImplementation(libs.junit)
