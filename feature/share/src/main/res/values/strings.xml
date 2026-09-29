@@ -9,7 +9,6 @@
     <string name="share_working">Preparing card…</string>
     <string name="share_saved">Saved to Photos.</string>
     <string name="share_error">Couldn’t create the card. Try again.</string>
-    <string name="share_back">Back to result</string>
     <string name="share_chooser">Share coin card</string>
     <string name="share_estimate">Estimated value</string>
     <string name="share_range">%1$s – %2$s</string>
@@ -17,5 +16,4 @@
     <string name="share_disclaimer">Estimates only · condition and market affect value</string>
     <string name="share_brand">CoinLens · coin field notes</string>
     <string name="share_estimate_footer">A careful estimate, not an appraisal.</string>
-    <string name="share_action_0">Back</string>
 </resources>

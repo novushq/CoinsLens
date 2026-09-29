@@ -27,4 +27,7 @@
     <string name="ds_error_blocked">We couldn\'t identify this image. Try a clearer photo of a coin or note.</string>
     <string name="ds_error_parse">We couldn\'t read the result. Try again.</string>
     <string name="ds_error_unknown">Something went wrong. Try again.</string>
+    <string name="ds_shutter">Take a photo</string>
+    <string name="ds_back">Back</string>
+    <string name="ds_close">Close</string>
 </resources>

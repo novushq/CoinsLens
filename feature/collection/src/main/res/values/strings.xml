@@ -3,7 +3,10 @@
     <string name="collection_title">Your cabinet</string>
     <string name="collection_first_scan">Scan your first coin</string>
     <string name="collection_estimated_value">Estimated collection value</string>
-    <string name="collection_items">%1$d pieces</string>
+    <plurals name="collection_items">
+        <item quantity="one">%d piece</item>
+        <item quantity="other">%d pieces</item>
+    </plurals>
     <string name="collection_cost_basis">Cost basis</string>
     <string name="collection_estimate_vs_cost">Estimate vs cost</string>
     <string name="collection_folders">Folders</string>
@@ -13,12 +16,14 @@
     <string name="collection_create">Create</string>
     <string name="collection_cancel">Cancel</string>
     <string name="collection_unsorted">Unsorted</string>
-    <string name="collection_back">Back</string>
     <string name="collection_rename">Rename</string>
     <string name="collection_delete">Delete</string>
     <string name="collection_sort_value">Sort by value</string>
     <string name="collection_sort_date">Sort by date</string>
     <string name="collection_sort_name">Sort by name</string>
+    <string name="collection_sort_value_short">Value</string>
+    <string name="collection_sort_date_short">Date</string>
+    <string name="collection_sort_name_short">Name</string>
     <string name="collection_empty_folder">No pieces in this folder yet.</string>
     <string name="collection_delete_folder_title">Delete “%1$s”?</string>
     <string name="collection_delete_folder_body">Its %1$d pieces will move to Unsorted.</string>

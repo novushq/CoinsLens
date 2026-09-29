@@ -69,8 +69,32 @@ private fun PillsAndChipsPreview() = PreviewSurface {
 private fun ButtonsPreview() = PreviewSurface {
     PrimaryButton(text = "Scan a coin", onClick = {}, icon = Icons.Outlined.PhotoCamera)
     PrimaryButton(text = "Identifying…", onClick = {}, loading = true)
+    SecondaryButton(text = "Share result", onClick = {}, icon = Icons.Outlined.PhotoCamera)
+    TertiaryButton(text = "Scan another", onClick = {})
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+        BackIconButton(onBack = {})
+        CloseIconButton(onClose = {})
+    }
     SectionHeader(title = "Recent scans", actionLabel = "See all", onAction = {})
     DisclaimerText()
+}
+
+@ThemePreviews
+@Composable
+private fun SurfacesPreview() = PreviewSurface {
+    HeroCard {
+        Text("Scan a coin", style = MaterialTheme.typography.headlineMedium)
+        Text("Even light, full coin in frame.", style = MaterialTheme.typography.bodyMedium)
+        PrimaryButton(text = "Open camera", onClick = {})
+    }
+    BrassDivider()
+    SelectableCard(selected = true, onSelect = {}) {
+        Text("Annual plan", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(Spacing.lg))
+    }
+    SelectableCard(selected = false, onSelect = {}) {
+        Text("Weekly plan", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(Spacing.lg))
+    }
+    ShutterButton(onClick = {})
 }
 
 @ThemePreviews

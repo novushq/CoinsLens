@@ -11,11 +11,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ArrowForward
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -38,7 +39,10 @@ import android.content.Intent
 import androidx.core.net.toUri
 import app.novushq.coinlens.common.AppResult
 import app.novushq.coinlens.common.UiState
+import app.novushq.coinlens.designsystem.component.HeroCard
 import app.novushq.coinlens.designsystem.component.PrimaryButton
+import app.novushq.coinlens.designsystem.component.SecondaryButton
+import app.novushq.coinlens.designsystem.component.SelectableCard
 import app.novushq.coinlens.designsystem.component.SectionHeader
 import app.novushq.coinlens.designsystem.component.UiStateSurface
 import app.novushq.coinlens.designsystem.theme.Spacing
@@ -116,8 +120,18 @@ private fun PaywallScreen(
                 verticalArrangement = Arrangement.spacedBy(Spacing.lg),
             ) {
                 TextButton(onClick = navigator::back, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.paywall_close)) }
-                Text(stringResource(title), style = MaterialTheme.typography.displaySmall)
-                Text(stringResource(benefit), style = MaterialTheme.typography.bodyLarge)
+                HeroCard {
+                    Text(
+                        stringResource(title),
+                        style = MaterialTheme.typography.displaySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    )
+                    Text(
+                        stringResource(benefit),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    )
+                }
                 SectionHeader(stringResource(R.string.paywall_plans))
                 plans.forEach { plan ->
                     val price = plan.localizedPrice ?: stringResource(plan.type.demoPrice())
@@ -131,6 +145,7 @@ private fun PaywallScreen(
                 )
                 PrimaryButton(
                     text = stringResource(if (isPro) R.string.paywall_pro_active else if (billing.isDemo) R.string.paywall_continue else R.string.paywall_continue_store),
+                    icon = Icons.Outlined.ArrowForward,
                     onClick = {
                         val activity = context.findActivity()
                         if (activity == null) {
@@ -151,7 +166,8 @@ private fun PaywallScreen(
                     enabled = !isPro && !actionInProgress,
                 )
                 if (actionInProgress) CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-                OutlinedButton(
+                SecondaryButton(
+                    text = stringResource(R.string.paywall_restore),
                     onClick = {
                         scope.launch {
                             actionInProgress = true
@@ -169,7 +185,7 @@ private fun PaywallScreen(
                     },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !actionInProgress,
-                ) { Text(stringResource(R.string.paywall_restore)) }
+                )
                 if (!isPro) TextButton(
                     onClick = {
                         val activity = context.findActivity() ?: run { message = R.string.paywall_reward_error; return@TextButton }
@@ -210,13 +226,20 @@ private fun PaywallScreen(
 
 @Composable
 private fun PlanCard(plan: BillingPlan, selected: Boolean, price: String, onClick: () -> Unit) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerLow),
-    ) {
-        Row(Modifier.fillMaxWidth().padding(Spacing.lg), horizontalArrangement = Arrangement.SpaceBetween) {
-            Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+    SelectableCard(selected = selected, onSelect = onClick) {
+        Row(
+            Modifier.fillMaxWidth().padding(Spacing.lg),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (selected) {
+                Icon(
+                    Icons.Outlined.CheckCircle,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs), modifier = Modifier.weight(1f)) {
                 Text(stringResource(plan.type.title()), style = MaterialTheme.typography.titleMedium)
                 plan.trialDays?.let { days ->
                     Text(

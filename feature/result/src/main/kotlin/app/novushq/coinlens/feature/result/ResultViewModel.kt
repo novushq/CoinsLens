@@ -33,6 +33,10 @@ class ResultViewModel(
     private val addToCollection: AddToCollectionUseCase,
 ) : ViewModel() {
     private var scanId = savedStateHandle.toRoute<Route.Result>().scanId
+
+    /** True when this result came from a fresh identification (no saved id yet). */
+    val isFresh: Boolean = scanId == null
+
     private val _state = MutableStateFlow<UiState<ResultData>>(UiState.Loading)
     val state = _state.asStateFlow()
     private var loadJob: Job? = null

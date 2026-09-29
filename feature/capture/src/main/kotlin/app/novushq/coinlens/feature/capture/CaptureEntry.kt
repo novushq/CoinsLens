@@ -13,8 +13,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.PhotoLibrary
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,6 +41,9 @@ import app.novushq.coinlens.common.DispatcherProvider
 import app.novushq.coinlens.data.ScanDraft
 import app.novushq.coinlens.designsystem.component.CoinFrame
 import app.novushq.coinlens.designsystem.component.PrimaryButton
+import app.novushq.coinlens.designsystem.component.SecondaryButton
+import app.novushq.coinlens.designsystem.component.ShutterButton
+import app.novushq.coinlens.designsystem.component.TertiaryButton
 import app.novushq.coinlens.designsystem.theme.Sizes
 import app.novushq.coinlens.designsystem.theme.Spacing
 import app.novushq.coinlens.domain.ObserveScanAllowanceUseCase
@@ -151,13 +156,7 @@ private fun CaptureScreen(navigator: AppNavigator) {
                     textAlign = TextAlign.Center,
                 )
             }
-            PrimaryButton(
-                text = stringResource(if (reverseSide) R.string.capture_choose_reverse else R.string.capture_choose_front),
-                onClick = { picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly)) },
-                modifier = Modifier.fillMaxWidth(),
-                loading = busy,
-            )
-            OutlinedButton(
+            ShutterButton(
                 onClick = {
                     val output = File.createTempFile("coinlens-", ".jpg", context.cacheDir)
                     val uri = FileProvider.getUriForFile(
@@ -168,16 +167,24 @@ private fun CaptureScreen(navigator: AppNavigator) {
                     pendingCameraUri = uri
                     camera.launch(uri)
                 },
-                modifier = Modifier.fillMaxWidth(),
                 enabled = !busy,
-            ) {
-                Text(stringResource(R.string.capture_camera))
-            }
+                loading = busy,
+                contentDescription = stringResource(R.string.capture_camera),
+            )
+            SecondaryButton(
+                text = stringResource(if (reverseSide) R.string.capture_choose_reverse else R.string.capture_choose_front),
+                onClick = { picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly)) },
+                modifier = Modifier.fillMaxWidth(),
+                loading = busy,
+                icon = Icons.Outlined.PhotoLibrary,
+            )
             if (frontUri != null) {
                 Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                    OutlinedButton(onClick = { reverseSide = !reverseSide }, enabled = !busy) {
-                        Text(stringResource(if (reverseSide) R.string.capture_front_side else R.string.capture_add_reverse))
-                    }
+                    TertiaryButton(
+                        text = stringResource(if (reverseSide) R.string.capture_front_side else R.string.capture_add_reverse),
+                        onClick = { reverseSide = !reverseSide },
+                        enabled = !busy,
+                    )
                 }
             }
             PrimaryButton(
@@ -191,6 +198,7 @@ private fun CaptureScreen(navigator: AppNavigator) {
                 },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = draftState.isReady && !busy,
+                icon = Icons.Outlined.Search,
             )
             Text(
                 text = stringResource(R.string.capture_photo_guidance),

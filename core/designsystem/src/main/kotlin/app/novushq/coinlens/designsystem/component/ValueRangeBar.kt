@@ -20,14 +20,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.unit.dp
 import app.novushq.coinlens.designsystem.R
+import app.novushq.coinlens.designsystem.theme.Sizes
 import app.novushq.coinlens.designsystem.theme.Spacing
+import app.novushq.coinlens.designsystem.theme.coinExtras
 import app.novushq.coinlens.model.Confidence
 import app.novushq.coinlens.model.Money
 import app.novushq.coinlens.model.ValueRange
@@ -62,6 +64,7 @@ fun ValueRangeBar(
 ) {
     val scale = RangeScale.of(circulated, uncirculated) ?: return
     val scheme = MaterialTheme.colorScheme
+    val gold = coinExtras
     val locale = LocalConfiguration.current.locales[0]
     val circulatedLabel = stringResource(R.string.ds_circulated)
     val uncirculatedLabel = stringResource(R.string.ds_uncirculated)
@@ -99,14 +102,25 @@ fun ValueRangeBar(
                     )
                 }
                 uncirculated?.let { band ->
-                    val inset = size.height / 4
+                    val bandHeight = Sizes.rangeBand.toPx()
+                    val inset = (size.height - bandHeight) / 2
                     val start = scale.fraction(band.low.cents) * size.width
                     val end = scale.fraction(band.high.cents) * size.width
                     drawRoundRect(
-                        color = scheme.primary,
+                        brush = Brush.horizontalGradient(
+                            0f to gold.goldDeep,
+                            1f to gold.goldBright,
+                            startX = start,
+                            endX = end.coerceAtLeast(start + bandHeight),
+                        ),
                         topLeft = Offset(start, inset),
-                        size = Size((end - start).coerceAtLeast(size.height / 2), size.height - inset * 2),
-                        cornerRadius = CornerRadius(inset, inset),
+                        size = Size((end - start).coerceAtLeast(bandHeight), bandHeight),
+                        cornerRadius = CornerRadius(bandHeight / 2, bandHeight / 2),
+                    )
+                    drawCircle(
+                        color = scheme.primary,
+                        radius = size.height / 2,
+                        center = Offset(end.coerceIn(size.height / 2, size.width - size.height / 2), size.height / 2),
                     )
                 }
             }

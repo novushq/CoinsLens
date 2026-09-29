@@ -1,6 +1,7 @@
 package app.novushq.coinlens.designsystem.component
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
@@ -21,9 +22,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.unit.dp
 import app.novushq.coinlens.designsystem.R
 import app.novushq.coinlens.designsystem.theme.Spacing
+import app.novushq.coinlens.designsystem.theme.Stroke
 import app.novushq.coinlens.model.Confidence
 
 /** Confidence is never colour alone: colour + icon + word (HIGH primary, MEDIUM tertiary, LOW error). */
@@ -34,12 +35,13 @@ fun ConfidencePill(confidence: Confidence, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
             .background(color.copy(alpha = 0.12f), CircleShape)
+            .border(Stroke.hairline, color.copy(alpha = 0.4f), CircleShape)
             .padding(horizontal = Spacing.sm, vertical = Spacing.xs)
             .clearAndSetSemantics { contentDescription = text },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
-        Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(16.dp))
+        Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(Spacing.lg))
         Text(text, style = MaterialTheme.typography.labelMedium, color = color)
     }
 }
