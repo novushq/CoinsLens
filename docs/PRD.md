@@ -28,7 +28,7 @@ People who hold coins or banknotes — hobby collectors, people who inherited a 
 Hard paywall after **1 free scan**. Plans: **Weekly $4.99**, **Annual $29.99 with 3-day trial**, **Lifetime $59.99** (prices shown from the store package, never hardcoded). Payers see **no ads ever**. Free users may watch **one rewarded ad to unlock one extra scan** (opt-in button on the paywall; no banners, no interstitials). Restore purchases reachable from paywall and settings.
 
 ## AI & data
-- Gemini via **Firebase AI Logic** (`com.google.firebase:firebase-ai`, Gemini Developer API backend), model name from **Remote Config** param `model_name`, default `gemini-3.8-flash`. JSON structured output with a response schema.
+- Gemini via **Firebase AI Logic** (`com.google.firebase:firebase-ai`, Gemini Developer API backend), model name from **Remote Config** param `model_name`, default `gemini-3.5-flash-lite`. JSON structured output with a response schema.
 - **Dummy data for testing**: when `app/google-services.json` is absent or `-Pcoinlens.ai=fake`, a deterministic `FakeIdentifyEngine` returns entries from a bundled sample catalogue. All unit tests use fakes; no test hits the network.
 - All user data local (Room + DataStore). Photos stored in app-private storage.
 

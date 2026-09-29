@@ -43,6 +43,6 @@ class AiPlumbingTest {
     @Test
     fun `static model config exposes the bundled default`() {
         val info = AiInfoProvider(AiMode.FAKE, StaticModelConfig()).current
-        assertEquals(AiInfo(AiMode.FAKE, "gemini-3.8-flash"), info)
+        assertEquals(AiInfo(AiMode.FAKE, "gemini-3.5-flash-lite"), info)
     }
 }

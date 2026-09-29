@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.map
 
 /** Remote Config key and bundled default (also in res/xml/remote_config_defaults.xml). */
 const val MODEL_NAME_KEY = "model_name"
-const val DEFAULT_MODEL_NAME = "gemini-3.8-flash"
+const val DEFAULT_MODEL_NAME = "gemini-3.5-flash-lite"
 
 enum class AiMode { FIREBASE, FAKE }
 
