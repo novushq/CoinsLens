@@ -1,5 +1,6 @@
 package app.novushq.coinlens.designsystem.component
 
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -8,14 +9,18 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CloudOff
@@ -29,16 +34,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.IntOffset
 import app.novushq.coinlens.common.AppError
 import app.novushq.coinlens.common.UiState
 import app.novushq.coinlens.designsystem.R
+import app.novushq.coinlens.designsystem.theme.Motion
+import app.novushq.coinlens.designsystem.theme.Sizes
 import app.novushq.coinlens.designsystem.theme.Spacing
 
 /**
@@ -75,7 +85,7 @@ fun EmptyState(
     action: (@Composable () -> Unit)? = null,
 ) {
     CenteredMessage(modifier) {
-        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(48.dp))
+        StateMedallion(icon = icon, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(message, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
         action?.invoke()
     }
@@ -88,11 +98,10 @@ fun ErrorState(
     onRetry: (() -> Unit)? = null,
 ) {
     CenteredMessage(modifier) {
-        Icon(
-            imageVector = if (error is AppError.Network || error is AppError.Timeout) Icons.Outlined.CloudOff else Icons.Outlined.ErrorOutline,
-            contentDescription = null,
+        StateMedallion(
+            icon = if (error is AppError.Network || error is AppError.Timeout) Icons.Outlined.CloudOff else Icons.Outlined.ErrorOutline,
             tint = MaterialTheme.colorScheme.error,
-            modifier = Modifier.size(48.dp),
+            container = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f),
         )
         Text(error.userMessage(), style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
         if (onRetry != null) {
@@ -101,34 +110,68 @@ fun ErrorState(
     }
 }
 
-/** Pulsing placeholder rows: a coin circle plus two text lines each. */
+@Composable
+private fun StateMedallion(
+    icon: ImageVector,
+    tint: Color,
+    container: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
+) {
+    Box(
+        modifier = Modifier
+            .size(Sizes.stateIcon)
+            .background(container, CircleShape),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(Spacing.xxl))
+    }
+}
+
+/** Shimmer placeholder rows: a coin circle plus two text lines each, with a travelling sheen. */
 @Composable
 fun SkeletonList(modifier: Modifier = Modifier, rows: Int = 4) {
     val description = stringResource(R.string.ds_loading)
-    val pulse by rememberInfiniteTransition(label = "skeleton").animateFloat(
-        initialValue = 0.35f,
-        targetValue = 0.8f,
-        animationSpec = infiniteRepeatable(tween(800), RepeatMode.Reverse),
-        label = "skeletonAlpha",
+    val progress by rememberInfiniteTransition(label = "skeleton").animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(Motion.SHIMMER, easing = LinearEasing), RepeatMode.Restart),
+        label = "shimmer",
     )
     val block = MaterialTheme.colorScheme.surfaceContainerHighest
-    Column(
+    val sheen = MaterialTheme.colorScheme.surfaceContainerLowest
+    val density = LocalDensity.current
+    val bandPx = with(density) { Sizes.shimmerBand.roundToPx() }
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
             .padding(Spacing.lg)
-            .alpha(pulse)
             .semantics { contentDescription = description },
-        verticalArrangement = Arrangement.spacedBy(Spacing.lg),
     ) {
-        repeat(rows) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                Box(Modifier.size(56.dp).background(block, CircleShape))
-                Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                    Box(Modifier.fillMaxWidth(0.6f).height(Spacing.lg).background(block, MaterialTheme.shapes.small))
-                    Box(Modifier.fillMaxWidth(0.35f).height(Spacing.md).background(block, MaterialTheme.shapes.small))
+        val widthPx = constraints.maxWidth.toFloat()
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.lg)) {
+            repeat(rows) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                    Box(Modifier.size(Sizes.coinFrameSmall).background(block, CircleShape))
+                    Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                        Box(Modifier.fillMaxWidth(0.6f).height(Spacing.lg).background(block, MaterialTheme.shapes.small))
+                        Box(Modifier.fillMaxWidth(0.35f).height(Spacing.md).background(block, MaterialTheme.shapes.small))
+                    }
                 }
             }
         }
+        Box(
+            Modifier
+                .offset { IntOffset(x = (-bandPx + (progress * (widthPx + 2 * bandPx)).toInt()), y = 0) }
+                .fillMaxHeight()
+                .width(Sizes.shimmerBand)
+                .graphicsLayer { alpha = 0.55f }
+                .background(
+                    Brush.horizontalGradient(
+                        0f to Color.Transparent,
+                        0.5f to sheen,
+                        1f to Color.Transparent,
+                    ),
+                ),
+        )
     }
 }
 
@@ -152,6 +195,7 @@ fun AppError.userMessage(): String = stringResource(
         is AppError.Timeout -> R.string.ds_error_timeout
         is AppError.Http -> if (code == 429) R.string.ds_error_quota else R.string.ds_error_server
         is AppError.Storage -> R.string.ds_error_storage
+        is AppError.Timeout -> R.string.ds_error_timeout
         is AppError.NotFound -> R.string.ds_error_not_found
         is AppError.ScanLimitReached -> R.string.ds_error_scan_limit
         is AppError.QuotaExceeded -> R.string.ds_error_quota

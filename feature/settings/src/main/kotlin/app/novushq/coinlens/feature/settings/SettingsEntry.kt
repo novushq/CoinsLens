@@ -10,12 +10,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.MediumTopAppBar
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -31,7 +34,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import app.novushq.coinlens.ai.AiInfoProvider
+import app.novushq.coinlens.designsystem.component.SecondaryButton
 import app.novushq.coinlens.designsystem.component.SectionHeader
+import app.novushq.coinlens.designsystem.component.TertiaryButton
 import app.novushq.coinlens.designsystem.theme.Spacing
 import app.novushq.coinlens.domain.EntitlementRepository
 import app.novushq.coinlens.domain.ObserveScanAllowanceUseCase
@@ -52,6 +57,7 @@ fun NavGraphBuilder.settingsGraph(navigator: AppNavigator) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SettingsContent(navigator: AppNavigator) {
     val context = LocalContext.current
@@ -67,7 +73,17 @@ private fun SettingsContent(navigator: AppNavigator) {
     var editPersona by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<Int?>(null) }
 
-    Scaffold(containerColor = MaterialTheme.colorScheme.background) { insets ->
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            MediumTopAppBar(
+                title = { Text(stringResource(R.string.settings_title)) },
+                scrollBehavior = scrollBehavior,
+            )
+        },
+    ) { insets ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -76,7 +92,6 @@ private fun SettingsContent(navigator: AppNavigator) {
                 .padding(horizontal = Spacing.xl, vertical = Spacing.xl),
             verticalArrangement = Arrangement.spacedBy(Spacing.xl),
         ) {
-            Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.displaySmall)
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 SectionHeader(title = stringResource(R.string.settings_plan))
                 Text(
@@ -85,12 +100,11 @@ private fun SettingsContent(navigator: AppNavigator) {
                     },
                     style = MaterialTheme.typography.bodyLarge,
                 )
-                OutlinedButton(
+                SecondaryButton(
+                    text = stringResource(if (isPro) R.string.settings_manage_plan else R.string.settings_upgrade),
                     onClick = { navigator.navigate(Route.Paywall(PaywallSource.SETTINGS)) },
                     modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(stringResource(if (isPro) R.string.settings_manage_plan else R.string.settings_upgrade))
-                }
+                )
                 TextButton(
                     onClick = {
                         scope.launch {
@@ -125,9 +139,10 @@ private fun SettingsContent(navigator: AppNavigator) {
                 text = stringResource(R.string.settings_persona, stringResource(personaLabel(persona ?: Persona.COLLECTOR))),
                     style = MaterialTheme.typography.bodyLarge,
                 )
-                OutlinedButton(onClick = { editPersona = true }) {
-                    Text(stringResource(R.string.settings_change_persona))
-                }
+                TertiaryButton(
+                    text = stringResource(R.string.settings_change_persona),
+                    onClick = { editPersona = true },
+                )
             }
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 SectionHeader(title = stringResource(R.string.settings_about))

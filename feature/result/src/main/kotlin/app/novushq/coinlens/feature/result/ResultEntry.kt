@@ -1,5 +1,6 @@
 package app.novushq.coinlens.feature.result
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,14 +9,26 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -23,15 +36,21 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import app.novushq.coinlens.common.UiState
+import app.novushq.coinlens.designsystem.component.BackIconButton
+import app.novushq.coinlens.designsystem.component.BrassDivider
+import app.novushq.coinlens.designsystem.component.CloseIconButton
 import app.novushq.coinlens.designsystem.component.CoinFrame
 import app.novushq.coinlens.designsystem.component.DisclaimerText
 import app.novushq.coinlens.designsystem.component.MetadataRow
 import app.novushq.coinlens.designsystem.component.PrimaryButton
+import app.novushq.coinlens.designsystem.component.SecondaryButton
 import app.novushq.coinlens.designsystem.component.SectionHeader
+import app.novushq.coinlens.designsystem.component.TertiaryButton
 import app.novushq.coinlens.designsystem.component.UiStateSurface
 import app.novushq.coinlens.designsystem.component.ValueRangeBar
 import app.novushq.coinlens.designsystem.theme.Sizes
 import app.novushq.coinlens.designsystem.theme.Spacing
+import app.novushq.coinlens.designsystem.theme.Stroke
 import app.novushq.coinlens.navigation.AppNavigator
 import app.novushq.coinlens.navigation.Route
 import org.koin.androidx.compose.koinViewModel
@@ -48,23 +67,56 @@ fun NavGraphBuilder.resultGraph(navigator: AppNavigator) {
         val state by viewModel.state.collectAsStateWithLifecycle()
         ResultContent(
             state = state,
+            isFresh = viewModel.isFresh,
             onRetry = viewModel::retry,
             onAddToCabinet = viewModel::addToCabinet,
             onShare = { id -> navigator.navigate(Route.Share(id)) },
             onScanAnother = { navigator.navigate(Route.Capture) },
+            onBack = navigator::back,
+            onCloseToHome = { navigator.navigate(Route.Home, popUpTo = Route.Capture, inclusive = true) },
         )
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ResultContent(
     state: UiState<ResultData>,
+    isFresh: Boolean,
     onRetry: () -> Unit,
     onAddToCabinet: () -> Unit,
     onShare: (String) -> Unit,
     onScanAnother: () -> Unit,
+    onBack: () -> Unit,
+    onCloseToHome: () -> Unit,
 ) {
-    Scaffold(containerColor = MaterialTheme.colorScheme.background) { insets ->
+    val snackbar = remember { SnackbarHostState() }
+    val haptics = LocalHapticFeedback.current
+    val addedMessage = stringResource(R.string.result_added_message)
+    val added = (state as? UiState.Success)?.data?.addedToCabinet == true
+    LaunchedEffect(added) {
+        if (added) {
+            haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+            snackbar.showSnackbar(addedMessage)
+        }
+    }
+    val revealed = state is UiState.Success
+    LaunchedEffect(revealed) {
+        if (revealed) haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+    }
+
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.result_title)) },
+                navigationIcon = {
+                    if (isFresh) CloseIconButton(onCloseToHome) else BackIconButton(onBack)
+                },
+            )
+        },
+        snackbarHost = { SnackbarHost(snackbar) },
+    ) { insets ->
         UiStateSurface(state = state, onRetry = onRetry, modifier = Modifier.padding(insets)) { data ->
             val coin = data.record.identification
             LazyColumn(
@@ -88,17 +140,31 @@ private fun ResultContent(
                             size = Sizes.coinFrameLarge,
                         )
                         if (coin.recognized) {
-                            Text(
-                                text = coin.name,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .semantics { heading() },
-                                style = MaterialTheme.typography.displaySmall,
-                                color = MaterialTheme.colorScheme.onSurface,
-                            )
-                            MetadataRow(
-                                listOf(coin.country, coin.year?.toString() ?: coin.yearText, coin.mintMark ?: coin.mint.orEmpty()),
-                            )
+                            Surface(
+                                shape = MaterialTheme.shapes.medium,
+                                color = MaterialTheme.colorScheme.surfaceContainerLow,
+                                border = BorderStroke(Stroke.hairline, MaterialTheme.colorScheme.outlineVariant),
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(Spacing.lg),
+                                    verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+                                ) {
+                                    Text(
+                                        text = coin.name,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .semantics { heading() },
+                                        style = MaterialTheme.typography.displaySmall,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                    )
+                                    MetadataRow(
+                                        listOf(coin.country, coin.year?.toString() ?: coin.yearText, coin.mintMark ?: coin.mint.orEmpty()),
+                                    )
+                                    BrassDivider()
+                                }
+                            }
                         } else {
                             Text(
                                 text = stringResource(R.string.result_unrecognized),
@@ -124,11 +190,19 @@ private fun ResultContent(
                     item {
                         Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                             SectionHeader(title = stringResource(R.string.result_details))
-                            DetailRow(stringResource(R.string.result_denomination), coin.denomination)
-                            DetailRow(stringResource(R.string.result_composition), coin.composition.orEmpty())
-                            DetailRow(stringResource(R.string.result_rarity), coin.rarity.name.replace('_', ' '))
-                            coin.weightGrams?.let { DetailRow(stringResource(R.string.result_weight), stringResource(R.string.result_grams, it)) }
-                            coin.diameterMm?.let { DetailRow(stringResource(R.string.result_diameter), stringResource(R.string.result_millimeters, it)) }
+                            val details = buildList {
+                                add(stringResource(R.string.result_denomination) to coin.denomination)
+                                add(stringResource(R.string.result_composition) to coin.composition.orEmpty())
+                                add(stringResource(R.string.result_rarity) to coin.rarity.name.replace('_', ' '))
+                                coin.weightGrams?.let { add(stringResource(R.string.result_weight) to stringResource(R.string.result_grams, it)) }
+                                coin.diameterMm?.let { add(stringResource(R.string.result_diameter) to stringResource(R.string.result_millimeters, it)) }
+                            }.filter { it.second.isNotBlank() }
+                            details.forEachIndexed { index, (label, value) ->
+                                if (index > 0) {
+                                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = Stroke.hairline)
+                                }
+                                DetailRow(label, value)
+                            }
                             if (coin.description.isNotBlank()) {
                                 Text(coin.description, style = MaterialTheme.typography.bodyMedium)
                             }
@@ -169,16 +243,18 @@ private fun ResultContent(
                                 onClick = onAddToCabinet,
                                 modifier = Modifier.fillMaxWidth(),
                                 enabled = !data.addedToCabinet,
+                                icon = Icons.Outlined.Add,
                             )
                             data.collectionError?.let {
                                 Text(stringResource(R.string.result_add_error), color = MaterialTheme.colorScheme.error)
                             }
-                            PrimaryButton(
+                            SecondaryButton(
                                 text = stringResource(R.string.result_share),
                                 onClick = { onShare(data.record.id) },
                                 modifier = Modifier.fillMaxWidth(),
+                                icon = Icons.Outlined.Share,
                             )
-                            PrimaryButton(
+                            TertiaryButton(
                                 text = stringResource(R.string.result_scan_another),
                                 onClick = onScanAnother,
                                 modifier = Modifier.fillMaxWidth(),

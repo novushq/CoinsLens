@@ -22,4 +22,5 @@
     <string name="result_share">Share this result</string>
     <string name="result_scan_another">Identify another</string>
     <string name="result_try_again">Try another photo</string>
+    <string name="result_added_message">Saved to your cabinet</string>
 </resources>

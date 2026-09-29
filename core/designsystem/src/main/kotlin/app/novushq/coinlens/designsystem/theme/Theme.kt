@@ -9,6 +9,10 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
@@ -100,6 +104,47 @@ private val DarkColors = darkColorScheme(
 )
 
 /**
+ * Brand colours beyond the M3 roles: metallic gold stops for rings, gradients
+ * and value bands, plus a success pair (tertiary is reserved for MEDIUM
+ * confidence, so success states need their own green).
+ */
+@Immutable
+data class CoinExtraColors(
+    val goldBright: Color,
+    val goldDeep: Color,
+    val success: Color,
+    val onSuccess: Color,
+    val successContainer: Color,
+    val onSuccessContainer: Color,
+)
+
+private val LightExtras = CoinExtraColors(
+    goldBright = Color(0xFFF0BF6D),
+    goldDeep = Color(0xFF7C580D),
+    success = Color(0xFF3B6B2F),
+    onSuccess = Color(0xFFFFFFFF),
+    successContainer = Color(0xFFD8E8C8),
+    onSuccessContainer = Color(0xFF1E3A17),
+)
+
+private val DarkExtras = CoinExtraColors(
+    goldBright = Color(0xFFFFDEAC),
+    goldDeep = Color(0xFFF0BF6D),
+    success = Color(0xFF9ED488),
+    onSuccess = Color(0xFF0F2E0A),
+    successContainer = Color(0xFF2A4A22),
+    onSuccessContainer = Color(0xFFD8E8C8),
+)
+
+private val LocalCoinExtraColors = staticCompositionLocalOf { LightExtras }
+
+/** Brand extension colours for the ambient theme. */
+val coinExtras: CoinExtraColors
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalCoinExtraColors.current
+
+/**
  * App theme. Dynamic colour is supported but off by default: the brass identity
  * matters in screenshots (docs/DESIGN.md).
  */
@@ -121,6 +166,12 @@ fun CoinLensTheme(
         colorScheme = colorScheme,
         typography = CoinTypography,
         shapes = CoinShapes,
-        content = content,
+        content = {
+            CompositionLocalProvider(
+                LocalCoinExtraColors provides if (darkTheme) DarkExtras else LightExtras,
+            ) {
+                content()
+            }
+        },
     )
 }

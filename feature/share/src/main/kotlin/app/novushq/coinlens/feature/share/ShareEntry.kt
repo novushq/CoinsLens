@@ -7,17 +7,22 @@ import android.os.Environment
 import android.provider.MediaStore
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,12 +40,14 @@ import androidx.navigation.compose.composable
 import androidx.core.content.FileProvider
 import app.novushq.coinlens.common.DispatcherProvider
 import app.novushq.coinlens.common.UiState
+import app.novushq.coinlens.designsystem.component.BackIconButton
 import app.novushq.coinlens.designsystem.component.CoinFrame
 import app.novushq.coinlens.designsystem.component.ConfidencePill
 import app.novushq.coinlens.designsystem.component.DisclaimerText
 import app.novushq.coinlens.designsystem.component.MetadataRow
 import app.novushq.coinlens.designsystem.component.MoneyRangeText
 import app.novushq.coinlens.designsystem.component.PrimaryButton
+import app.novushq.coinlens.designsystem.component.SecondaryButton
 import app.novushq.coinlens.designsystem.component.UiStateSurface
 import app.novushq.coinlens.designsystem.component.ValueRangeBar
 import app.novushq.coinlens.designsystem.theme.Sizes
@@ -70,6 +77,7 @@ fun NavGraphBuilder.shareGraph(navigator: AppNavigator) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ShareContent(state: UiState<ScanRecord>, navigator: AppNavigator) {
     val context = LocalContext.current
@@ -138,7 +146,15 @@ private fun ShareContent(state: UiState<ScanRecord>, navigator: AppNavigator) {
         }
     }
 
-    Scaffold(containerColor = MaterialTheme.colorScheme.background) { insets ->
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.share_title)) },
+                navigationIcon = { BackIconButton(navigator::back) },
+            )
+        },
+    ) { insets ->
         UiStateSurface(state = state, modifier = Modifier.padding(insets)) { record ->
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
@@ -146,19 +162,21 @@ private fun ShareContent(state: UiState<ScanRecord>, navigator: AppNavigator) {
                 verticalArrangement = Arrangement.spacedBy(Spacing.lg),
             ) {
                 item {
-                    Text(stringResource(R.string.share_title), style = MaterialTheme.typography.headlineMedium)
-                }
-                item {
                     SharePreview(record = record, dark = darkCard)
                 }
                 item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        TextButton(onClick = { darkCard = false }) { Text(stringResource(R.string.share_light)) }
-                        TextButton(onClick = { darkCard = true }) { Text(stringResource(R.string.share_dark)) }
+                    val options = listOf(
+                        stringResource(R.string.share_light),
+                        stringResource(R.string.share_dark),
+                    )
+                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                        options.forEachIndexed { index, label ->
+                            SegmentedButton(
+                                selected = darkCard == (index == 1),
+                                onClick = { darkCard = index == 1 },
+                                shape = SegmentedButtonDefaults.itemShape(index, options.size),
+                            ) { Text(label) }
+                        }
                     }
                 }
                 item {
@@ -167,24 +185,22 @@ private fun ShareContent(state: UiState<ScanRecord>, navigator: AppNavigator) {
                         onClick = { export(record, false, chooserTitle) },
                         modifier = Modifier.fillMaxWidth(),
                         loading = busy,
+                        icon = Icons.Outlined.Share,
                     )
                 }
                 item {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        OutlinedButton(
+                        SecondaryButton(
+                            text = stringResource(R.string.share_save),
                             onClick = { export(record, true, chooserTitle) },
                             modifier = Modifier.fillMaxWidth(),
                             enabled = !busy,
-                        ) { Text(stringResource(R.string.share_save)) }
+                            icon = Icons.Outlined.Download,
+                        )
                     }
                 }
                 message?.let { item { Text(stringResource(it), color = MaterialTheme.colorScheme.primary) } }
                 item { DisclaimerText() }
-                item {
-                    TextButton(onClick = navigator::back, modifier = Modifier.fillMaxWidth()) {
-                        Text(stringResource(R.string.share_back))
-                    }
-                }
             }
         }
     }

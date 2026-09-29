@@ -1,5 +1,6 @@
 package app.novushq.coinlens.feature.home
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -11,15 +12,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.PhotoCamera
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -31,13 +38,16 @@ import androidx.navigation.compose.composable
 import app.novushq.coinlens.common.UiState
 import app.novushq.coinlens.designsystem.component.CoinFrame
 import app.novushq.coinlens.designsystem.component.DisclaimerText
+import app.novushq.coinlens.designsystem.component.HeroCard
 import app.novushq.coinlens.designsystem.component.MoneyRangeText
 import app.novushq.coinlens.designsystem.component.MoneyText
 import app.novushq.coinlens.designsystem.component.PrimaryButton
 import app.novushq.coinlens.designsystem.component.SectionHeader
 import app.novushq.coinlens.designsystem.component.UiStateSurface
 import app.novushq.coinlens.designsystem.theme.CoinLensTheme
+import app.novushq.coinlens.designsystem.theme.Sizes
 import app.novushq.coinlens.designsystem.theme.Spacing
+import app.novushq.coinlens.designsystem.theme.Stroke
 import app.novushq.coinlens.designsystem.theme.screenGutter
 import app.novushq.coinlens.model.CollectionSummary
 import app.novushq.coinlens.model.ScanAllowance
@@ -65,48 +75,48 @@ fun NavGraphBuilder.homeGraph(navigator: AppNavigator) {
                     if (allowance.canScan) Route.Capture else Route.Paywall(PaywallSource.QUOTA),
                 )
             },
-            onSettings = { navigator.navigate(Route.Settings) },
+            onOpenCabinet = { navigator.navigate(Route.Collection) },
             onOpenScan = { navigator.navigate(Route.Result(it)) },
         )
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HomeContent(
     state: UiState<HomeData>,
     onRetry: () -> Unit,
     onScan: (ScanAllowance) -> Unit,
-    onSettings: () -> Unit,
+    onOpenCabinet: () -> Unit,
     onOpenScan: (String) -> Unit,
 ) {
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = screenGutter(), vertical = Spacing.sm),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                CoinFrame(
-                    obverse = null,
-                    contentDescription = null,
-                    size = app.novushq.coinlens.designsystem.theme.Sizes.coinFrameSmall,
-                )
-                Text(
-                    text = stringResource(R.string.home_title),
-                    modifier = Modifier
-                        .padding(start = Spacing.sm)
-                        .semantics { heading() },
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Spacer(Modifier.weight(1f))
-                TextButton(onClick = onSettings) {
-                    Text(stringResource(R.string.home_settings))
-                }
-            }
+            CenterAlignedTopAppBar(
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        CoinFrame(
+                            obverse = null,
+                            contentDescription = null,
+                            size = Sizes.coinFrameSmall,
+                        )
+                        Text(
+                            text = stringResource(R.string.home_title),
+                            modifier = Modifier
+                                .padding(start = Spacing.sm)
+                                .semantics { heading() },
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                },
+                scrollBehavior = scrollBehavior,
+            )
         },
     ) { insets ->
         UiStateSurface(
@@ -144,8 +154,12 @@ private fun HomeContent(
                 item { ScanInvitation(onScan, data.allowance) }
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                        SectionHeader(title = stringResource(R.string.home_collection))
-                        CabinetSummary(data.summary)
+                        SectionHeader(
+                            title = stringResource(R.string.home_collection),
+                            actionLabel = stringResource(R.string.home_see_all),
+                            onAction = onOpenCabinet,
+                        )
+                        CabinetSummary(data.summary, onOpenCabinet)
                     }
                 }
                 item {
@@ -165,6 +179,7 @@ private fun HomeContent(
                             onClick = { onOpenScan(scan.id) },
                             shape = MaterialTheme.shapes.medium,
                             color = MaterialTheme.colorScheme.surfaceContainer,
+                            border = BorderStroke(Stroke.hairline, MaterialTheme.colorScheme.outlineVariant),
                         ) {
                             Row(
                                 modifier = Modifier
@@ -176,7 +191,7 @@ private fun HomeContent(
                                 CoinFrame(
                                     obverse = scan.obversePath,
                                     contentDescription = scan.identification.name,
-                                    size = app.novushq.coinlens.designsystem.theme.Sizes.coinFrameSmall,
+                                    size = Sizes.coinFrameSmall,
                                 )
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
@@ -204,17 +219,8 @@ private fun HomeContent(
 
 @Composable
 private fun ScanInvitation(onScan: (ScanAllowance) -> Unit, allowance: ScanAllowance) {
-    Surface(
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.primaryContainer,
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(Spacing.xl),
-            verticalArrangement = Arrangement.spacedBy(Spacing.md),
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+    HeroCard {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = stringResource(
                         if (allowance.isPro) R.string.home_pro_badge else R.string.home_free_badge,
@@ -230,7 +236,7 @@ private fun ScanInvitation(onScan: (ScanAllowance) -> Unit, allowance: ScanAllow
                 CoinFrame(
                     obverse = null,
                     contentDescription = null,
-                    size = app.novushq.coinlens.designsystem.theme.Sizes.coinFrameMedium,
+                    size = Sizes.coinFrameMedium,
                 )
             }
             Text(
@@ -244,10 +250,11 @@ private fun ScanInvitation(onScan: (ScanAllowance) -> Unit, allowance: ScanAllow
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
             PrimaryButton(
-            text = stringResource(if (allowance.canScan) R.string.home_scan_action else R.string.home_view_plans),
-            onClick = { onScan(allowance) },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = true,
+                text = stringResource(if (allowance.canScan) R.string.home_scan_action else R.string.home_view_plans),
+                onClick = { onScan(allowance) },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = true,
+                icon = if (allowance.canScan) Icons.Outlined.PhotoCamera else null,
             )
             if (!allowance.canScan) {
                 Text(
@@ -256,15 +263,16 @@ private fun ScanInvitation(onScan: (ScanAllowance) -> Unit, allowance: ScanAllow
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
             }
-        }
     }
 }
 
 @Composable
-private fun CabinetSummary(summary: CollectionSummary) {
+private fun CabinetSummary(summary: CollectionSummary, onOpen: () -> Unit) {
     Surface(
+        onClick = onOpen,
         shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surfaceContainer,
+        border = BorderStroke(Stroke.hairline, MaterialTheme.colorScheme.outlineVariant),
     ) {
         Row(
             modifier = Modifier
@@ -297,7 +305,7 @@ private fun CabinetSummary(summary: CollectionSummary) {
                 }
             }
             Text(
-                text = stringResource(R.string.home_piece_count, summary.itemCount),
+                text = pluralStringResource(R.plurals.home_piece_count, summary.itemCount, summary.itemCount),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -314,8 +322,8 @@ private fun HomePreview() {
                 HomeData(CollectionSummary(), ScanAllowance(), emptyList()),
             ),
             onRetry = {},
-        onScan = { _ -> },
-            onSettings = {},
+            onScan = { _ -> },
+            onOpenCabinet = {},
             onOpenScan = {},
         )
     }

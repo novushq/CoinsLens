@@ -1,45 +1,64 @@
 package app.novushq.coinlens.feature.collection
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.MediumTopAppBar
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import app.novushq.coinlens.common.UiState
+import app.novushq.coinlens.designsystem.component.BackIconButton
+import app.novushq.coinlens.designsystem.component.CoinFrame
 import app.novushq.coinlens.designsystem.component.DisclaimerText
 import app.novushq.coinlens.designsystem.component.MoneyText
 import app.novushq.coinlens.designsystem.component.MoneyRangeText
 import app.novushq.coinlens.designsystem.component.PrimaryButton
 import app.novushq.coinlens.designsystem.component.SectionHeader
+import app.novushq.coinlens.designsystem.component.TertiaryButton
 import app.novushq.coinlens.designsystem.component.UiStateSurface
+import app.novushq.coinlens.designsystem.theme.Sizes
 import app.novushq.coinlens.designsystem.theme.Spacing
-import app.novushq.coinlens.model.CollectionItem
 import app.novushq.coinlens.model.Folder
 import app.novushq.coinlens.model.Grade
 import app.novushq.coinlens.model.Money
@@ -73,8 +92,8 @@ private fun sanitizePriceInput(input: String): String {
 @Composable
 private fun CollectionDestination(navigator: AppNavigator, viewModel: CollectionViewModel = koinViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    Scaffold(containerColor = MaterialTheme.colorScheme.background) { insets ->
-        UiStateSurface(state = state, onRetry = viewModel::retry, modifier = Modifier.padding(insets)) { data ->
+    Box(Modifier.fillMaxSize()) {
+        UiStateSurface(state = state, onRetry = viewModel::retry) { data ->
             when {
                 data.item != null -> ItemScreen(data.item, data.folders, viewModel, navigator)
                 data.folder != null -> FolderScreen(data.folder.folder, data.folder.items, viewModel, navigator)
@@ -84,56 +103,71 @@ private fun CollectionDestination(navigator: AppNavigator, viewModel: Collection
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CollectionScreen(data: CollectionScreenData, viewModel: CollectionViewModel, navigator: AppNavigator) {
     var newFolder by remember { mutableStateOf(false) }
     var name by remember { mutableStateOf("") }
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(Spacing.xl),
-        verticalArrangement = Arrangement.spacedBy(Spacing.lg),
-    ) {
-        item { Text(stringResource(R.string.collection_title), style = MaterialTheme.typography.headlineMedium) }
-        if (data.summary.itemCount == 0) item {
-            PrimaryButton(
-                text = stringResource(R.string.collection_first_scan),
-                onClick = { navigator.navigate(Route.Capture) },
-                modifier = Modifier.fillMaxWidth(),
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            MediumTopAppBar(
+                title = { Text(stringResource(R.string.collection_title)) },
+                scrollBehavior = scrollBehavior,
             )
-        }
-        item {
-            Card {
-                Column(Modifier.padding(Spacing.lg), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                    Text(stringResource(R.string.collection_estimated_value), style = MaterialTheme.typography.labelLarge)
-                    MoneyText(data.summary.totalMid, style = MaterialTheme.typography.displaySmall.copy(fontFamily = FontFamily.Serif, fontWeight = FontWeight.SemiBold))
-                    MoneyRangeText(ValueRange(data.summary.totalLow, data.summary.totalHigh))
-                    Text(stringResource(R.string.collection_items, data.summary.itemCount), style = MaterialTheme.typography.bodyMedium)
-                    Text(stringResource(R.string.collection_cost_basis), style = MaterialTheme.typography.labelLarge)
-                    MoneyText(data.summary.totalCost, style = MaterialTheme.typography.titleMedium)
-                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                        Text(stringResource(R.string.collection_estimate_vs_cost), style = MaterialTheme.typography.bodyMedium)
-                        MoneyText(Money(data.summary.totalMid.cents - data.summary.totalCost.cents), style = MaterialTheme.typography.bodyMedium)
+        },
+    ) { insets ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(insets),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(Spacing.xl),
+            verticalArrangement = Arrangement.spacedBy(Spacing.lg),
+        ) {
+            if (data.summary.itemCount == 0) item {
+                PrimaryButton(
+                    text = stringResource(R.string.collection_first_scan),
+                    onClick = { navigator.navigate(Route.Capture) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            item {
+                Card {
+                    Column(Modifier.padding(Spacing.lg), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                        Text(stringResource(R.string.collection_estimated_value), style = MaterialTheme.typography.labelLarge)
+                        MoneyText(data.summary.totalMid, style = MaterialTheme.typography.displaySmall.copy(fontFamily = FontFamily.Serif, fontWeight = FontWeight.SemiBold))
+                        MoneyRangeText(ValueRange(data.summary.totalLow, data.summary.totalHigh))
+                        Text(pluralStringResource(R.plurals.collection_items, data.summary.itemCount, data.summary.itemCount), style = MaterialTheme.typography.bodyMedium)
+                        Text(stringResource(R.string.collection_cost_basis), style = MaterialTheme.typography.labelLarge)
+                        MoneyText(data.summary.totalCost, style = MaterialTheme.typography.titleMedium)
+                        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                            Text(stringResource(R.string.collection_estimate_vs_cost), style = MaterialTheme.typography.bodyMedium)
+                            MoneyText(Money(data.summary.totalMid.cents - data.summary.totalCost.cents), style = MaterialTheme.typography.bodyMedium)
+                        }
+                        DisclaimerText()
                     }
-                    DisclaimerText()
                 }
             }
-        }
-        item { SectionHeader(stringResource(R.string.collection_folders)) }
-        if (data.folders.isEmpty()) item { Text(stringResource(R.string.collection_no_folders), style = MaterialTheme.typography.bodyMedium) }
-        items(data.folders, key = { it.id }) { folder ->
-            FolderRow(folder) { navigator.navigate(Route.Folder(folder.id)) }
-        }
-        item {
-            OutlinedButton(onClick = { newFolder = true }, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.collection_create_folder))
+            item { SectionHeader(stringResource(R.string.collection_folders)) }
+            if (data.folders.isEmpty()) item { Text(stringResource(R.string.collection_no_folders), style = MaterialTheme.typography.bodyMedium) }
+            items(data.folders, key = { it.id }) { folder ->
+                FolderRow(folder) { navigator.navigate(Route.Folder(folder.id)) }
+            }
+            item {
+                TertiaryButton(
+                    text = stringResource(R.string.collection_create_folder),
+                    onClick = { newFolder = true },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            val unsorted = data.items.filter { it.item.folderId == null }
+            if (unsorted.isNotEmpty()) {
+                item { SectionHeader(stringResource(R.string.collection_unsorted)) }
+                items(unsorted, key = { it.item.id }) { value -> ItemRow(value) { navigator.navigate(Route.Item(value.item.id)) } }
             }
         }
-        val unsorted = data.items.filter { it.item.folderId == null }
-        if (unsorted.isNotEmpty()) {
-            item { SectionHeader(stringResource(R.string.collection_unsorted)) }
-            items(unsorted, key = { it.item.id }) { value -> ItemRow(value) { navigator.navigate(Route.Item(value.item.id)) } }
-        }
-        item { TextButton(onClick = navigator::back, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.collection_back)) } }
     }
     if (newFolder) AlertDialog(
         onDismissRequest = { newFolder = false },
@@ -146,9 +180,10 @@ private fun CollectionScreen(data: CollectionScreenData, viewModel: CollectionVi
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FolderScreen(folder: Folder, items: List<ValuedItem>, viewModel: CollectionViewModel, navigator: AppNavigator) {
-    var sort by remember { mutableStateOf(0) }
+    var sort by remember { mutableIntStateOf(0) }
     var confirmDelete by remember { mutableStateOf(false) }
     var editName by remember { mutableStateOf(false) }
     var name by remember { mutableStateOf(folder.name) }
@@ -157,17 +192,48 @@ private fun FolderScreen(folder: Folder, items: List<ValuedItem>, viewModel: Col
         2 -> items.sortedBy { it.scan.identification.name.lowercase() }
         else -> items.sortedByDescending { it.range.midpoint.cents }
     }
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(Spacing.xl), verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
-        item { Text(folder.name, style = MaterialTheme.typography.headlineMedium) }
-        item { Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-            TextButton(onClick = { editName = true }) { Text(stringResource(R.string.collection_rename)) }
-            TextButton(onClick = { confirmDelete = true }) { Text(stringResource(R.string.collection_delete)) }
-            TextButton(onClick = { sort = (sort + 1) % 3 }) { Text(stringResource(listOf(R.string.collection_sort_value, R.string.collection_sort_date, R.string.collection_sort_name)[sort])) }
-        } }
-        item { SectionHeader(stringResource(R.string.collection_items, folder.itemCount)) }
-        if (sorted.isEmpty()) item { Text(stringResource(R.string.collection_empty_folder), style = MaterialTheme.typography.bodyMedium) }
-        items(sorted, key = { it.item.id }) { value -> ItemRow(value) { navigator.navigate(Route.Item(value.item.id)) } }
-        item { TextButton(onClick = navigator::back, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.collection_back)) } }
+    val sortLabels = listOf(
+        stringResource(R.string.collection_sort_value_short),
+        stringResource(R.string.collection_sort_date_short),
+        stringResource(R.string.collection_sort_name_short),
+    )
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            TopAppBar(
+                title = { Text(folder.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                navigationIcon = { BackIconButton(navigator::back) },
+            )
+        },
+    ) { insets ->
+        LazyColumn(
+            Modifier
+                .fillMaxSize()
+                .padding(insets),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(Spacing.xl),
+            verticalArrangement = Arrangement.spacedBy(Spacing.md),
+        ) {
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                    TextButton(onClick = { editName = true }) { Text(stringResource(R.string.collection_rename)) }
+                    TextButton(onClick = { confirmDelete = true }) { Text(stringResource(R.string.collection_delete)) }
+                }
+            }
+            item {
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    sortLabels.forEachIndexed { index, label ->
+                        SegmentedButton(
+                            selected = sort == index,
+                            onClick = { sort = index },
+                            shape = SegmentedButtonDefaults.itemShape(index, sortLabels.size),
+                        ) { Text(label) }
+                    }
+                }
+            }
+            item { SectionHeader(pluralStringResource(R.plurals.collection_items, folder.itemCount, folder.itemCount)) }
+            if (sorted.isEmpty()) item { Text(stringResource(R.string.collection_empty_folder), style = MaterialTheme.typography.bodyMedium) }
+            items(sorted, key = { it.item.id }) { value -> ItemRow(value) { navigator.navigate(Route.Item(value.item.id)) } }
+        }
     }
     if (editName) AlertDialog(
         onDismissRequest = { editName = false }, title = { Text(stringResource(R.string.collection_rename)) },
@@ -184,60 +250,101 @@ private fun FolderScreen(folder: Folder, items: List<ValuedItem>, viewModel: Col
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ItemScreen(value: ValuedItem, folders: List<Folder>, viewModel: CollectionViewModel, navigator: AppNavigator) {
     val current = value.item
     var grade by remember(current.id) { mutableStateOf(current.grade ?: Grade.GOOD) }
     var notes by remember(current.id) { mutableStateOf(current.gradeNotes) }
- var price by remember(current.id) { mutableStateOf(current.purchasePrice?.let { "%.2f".format(Locale.US, it.cents / 100.0) }.orEmpty()) }
+    var price by remember(current.id) { mutableStateOf(current.purchasePrice?.let { "%.2f".format(Locale.US, it.cents / 100.0) }.orEmpty()) }
     var quantity by remember(current.id) { mutableStateOf(current.quantity.toString()) }
     var folderId by remember(current.id) { mutableStateOf(current.folderId) }
     var gradeMenu by remember { mutableStateOf(false) }
     var folderMenu by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(Spacing.xl), verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
-        item { Text(value.scan.identification.name, style = MaterialTheme.typography.headlineMedium) }
-        item { Text(listOf(value.scan.identification.country, value.scan.identification.year?.toString() ?: value.scan.identification.yearText).filter(String::isNotBlank).joinToString(" · "), style = MaterialTheme.typography.bodyMedium) }
-        item { TextButton(onClick = { navigator.navigate(Route.Result(value.scan.id)) }) { Text(stringResource(R.string.collection_open_scan)) } }
-        item { SectionHeader(stringResource(R.string.collection_condition)) }
-        item {
-            Column {
-                OutlinedButton(onClick = { gradeMenu = true }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.collection_grade, grade.name.replace('_', ' '))) }
-                DropdownMenu(expanded = gradeMenu, onDismissRequest = { gradeMenu = false }) {
-                    Grade.entries.forEach { option -> DropdownMenuItem(text = { Text(option.name.replace('_', ' ')) }, onClick = { grade = option; gradeMenu = false }) }
-                }
-            }
-        }
-        item { OutlinedTextField(value = notes, onValueChange = { notes = it }, label = { Text(stringResource(R.string.collection_grade_notes)) }, modifier = Modifier.fillMaxWidth()) }
- item { OutlinedTextField(value = price, onValueChange = { price = sanitizePriceInput(it) }, label = { Text(stringResource(R.string.collection_purchase_price)) }, modifier = Modifier.fillMaxWidth(), singleLine = true) }
-        item { OutlinedTextField(value = quantity, onValueChange = { quantity = it.filter(Char::isDigit).take(4) }, label = { Text(stringResource(R.string.collection_quantity)) }, modifier = Modifier.fillMaxWidth(), singleLine = true) }
-        item {
-            Column {
-                OutlinedButton(onClick = { folderMenu = true }, modifier = Modifier.fillMaxWidth()) {
-                    Text(folders.firstOrNull { it.id == folderId }?.name ?: stringResource(R.string.collection_unsorted))
-                }
-                DropdownMenu(expanded = folderMenu, onDismissRequest = { folderMenu = false }) {
-                    DropdownMenuItem(text = { Text(stringResource(R.string.collection_unsorted)) }, onClick = { folderId = null; folderMenu = false })
-                    folders.forEach { folder -> DropdownMenuItem(text = { Text(folder.name) }, onClick = { folderId = folder.id; folderMenu = false }) }
-                }
-            }
-        }
-        item { Text(stringResource(R.string.collection_item_value), style = MaterialTheme.typography.labelLarge) }
-        item { MoneyText(value.range.midpoint, style = MaterialTheme.typography.headlineSmall.copy(fontFamily = FontFamily.Serif)) }
-        item {
-            PrimaryButton(
-                text = stringResource(R.string.collection_save),
-                onClick = {
- val cents = runCatching {
-     price.toBigDecimalOrNull()?.movePointRight(2)?.setScale(0, RoundingMode.HALF_UP)?.longValueExact()
- }.getOrNull()
-                    viewModel.updateItem(current.copy(grade = grade, gradeNotes = notes, purchasePrice = cents?.let(::Money), quantity = quantity.toIntOrNull()?.coerceAtLeast(1) ?: 1, folderId = folderId))
-                }, modifier = Modifier.fillMaxWidth(),
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            TopAppBar(
+                title = { Text(value.scan.identification.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                navigationIcon = { BackIconButton(navigator::back) },
             )
+        },
+    ) { insets ->
+        LazyColumn(
+            Modifier
+                .fillMaxSize()
+                .padding(insets),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(Spacing.xl),
+            verticalArrangement = Arrangement.spacedBy(Spacing.md),
+        ) {
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+                ) {
+                    CoinFrame(
+                        obverse = value.scan.obversePath,
+                        contentDescription = value.scan.identification.name,
+                        size = Sizes.coinFrameMedium,
+                    )
+                    Text(
+                        listOf(value.scan.identification.country, value.scan.identification.year?.toString() ?: value.scan.identification.yearText)
+                            .filter(String::isNotBlank).joinToString(" · "),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            item { TextButton(onClick = { navigator.navigate(Route.Result(value.scan.id)) }) { Text(stringResource(R.string.collection_open_scan)) } }
+            item { SectionHeader(stringResource(R.string.collection_condition)) }
+            item {
+                Column {
+                    TertiaryButton(
+                        text = stringResource(R.string.collection_grade, grade.name.replace('_', ' ')),
+                        onClick = { gradeMenu = true },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    DropdownMenu(expanded = gradeMenu, onDismissRequest = { gradeMenu = false }) {
+                        Grade.entries.forEach { option -> DropdownMenuItem(text = { Text(option.name.replace('_', ' ')) }, onClick = { grade = option; gradeMenu = false }) }
+                    }
+                }
+            }
+            item { OutlinedTextField(value = notes, onValueChange = { notes = it }, label = { Text(stringResource(R.string.collection_grade_notes)) }, modifier = Modifier.fillMaxWidth()) }
+            item { OutlinedTextField(value = price, onValueChange = { price = sanitizePriceInput(it) }, label = { Text(stringResource(R.string.collection_purchase_price)) }, modifier = Modifier.fillMaxWidth(), singleLine = true) }
+            item { OutlinedTextField(value = quantity, onValueChange = { quantity = it.filter(Char::isDigit).take(4) }, label = { Text(stringResource(R.string.collection_quantity)) }, modifier = Modifier.fillMaxWidth(), singleLine = true) }
+            item {
+                Column {
+                    TertiaryButton(
+                        text = folders.firstOrNull { it.id == folderId }?.name ?: stringResource(R.string.collection_unsorted),
+                        onClick = { folderMenu = true },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    DropdownMenu(expanded = folderMenu, onDismissRequest = { folderMenu = false }) {
+                        DropdownMenuItem(text = { Text(stringResource(R.string.collection_unsorted)) }, onClick = { folderId = null; folderMenu = false })
+                        folders.forEach { folder -> DropdownMenuItem(text = { Text(folder.name) }, onClick = { folderId = folder.id; folderMenu = false }) }
+                    }
+                }
+            }
+            item { Text(stringResource(R.string.collection_item_value), style = MaterialTheme.typography.labelLarge) }
+            item { MoneyText(value.range.midpoint, style = MaterialTheme.typography.headlineSmall.copy(fontFamily = FontFamily.Serif)) }
+            item {
+                PrimaryButton(
+                    text = stringResource(R.string.collection_save),
+                    onClick = {
+                        val cents = runCatching {
+                            price.toBigDecimalOrNull()?.movePointRight(2)?.setScale(0, RoundingMode.HALF_UP)?.longValueExact()
+                        }.getOrNull()
+                        viewModel.updateItem(current.copy(grade = grade, gradeNotes = notes, purchasePrice = cents?.let(::Money), quantity = quantity.toIntOrNull()?.coerceAtLeast(1) ?: 1, folderId = folderId))
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    icon = Icons.Outlined.Check,
+                )
+            }
+            item { TextButton(onClick = { navigator.navigate(Route.Share(value.scan.id)) }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.collection_share)) } }
+            item { TextButton(onClick = { confirmDelete = true }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.collection_delete)) } }
         }
-        item { TextButton(onClick = { navigator.navigate(Route.Share(value.scan.id)) }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.collection_share)) } }
-        item { TextButton(onClick = { confirmDelete = true }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.collection_delete)) } }
-        item { TextButton(onClick = navigator::back, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.collection_back)) } }
     }
     if (confirmDelete) AlertDialog(
         onDismissRequest = { confirmDelete = false }, title = { Text(stringResource(R.string.collection_delete_item_title)) },
@@ -250,10 +357,20 @@ private fun ItemScreen(value: ValuedItem, folders: List<Folder>, viewModel: Coll
 @Composable
 private fun FolderRow(folder: Folder, onClick: () -> Unit) {
     Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
-        Row(Modifier.padding(Spacing.lg), horizontalArrangement = Arrangement.SpaceBetween) {
-            Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+        Row(
+            Modifier.padding(Spacing.lg),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                Icons.Outlined.Folder,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(Spacing.xl),
+            )
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs), modifier = Modifier.weight(1f)) {
                 Text(folder.name, style = MaterialTheme.typography.titleMedium)
-                Text(stringResource(R.string.collection_items, folder.itemCount), style = MaterialTheme.typography.bodySmall)
+                Text(pluralStringResource(R.plurals.collection_items, folder.itemCount, folder.itemCount), style = MaterialTheme.typography.bodySmall)
             }
             MoneyText(folder.totalValue, style = MaterialTheme.typography.titleMedium)
         }
@@ -263,10 +380,23 @@ private fun FolderRow(folder: Folder, onClick: () -> Unit) {
 @Composable
 private fun ItemRow(value: ValuedItem, onClick: () -> Unit) {
     Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
-        Row(Modifier.padding(Spacing.lg), horizontalArrangement = Arrangement.SpaceBetween) {
+        Row(
+            Modifier.padding(Spacing.md),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            CoinFrame(
+                obverse = value.scan.obversePath,
+                contentDescription = null,
+                size = Sizes.coinFrameSmall,
+            )
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs), modifier = Modifier.weight(1f)) {
-                Text(value.scan.identification.name, style = MaterialTheme.typography.titleMedium)
-                Text(listOfNotNull(value.scan.identification.year?.toString() ?: value.scan.identification.yearText, value.item.grade?.name?.replace('_', ' ')).filter(String::isNotBlank).joinToString(" · "), style = MaterialTheme.typography.bodySmall)
+                Text(value.scan.identification.name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    listOfNotNull(value.scan.identification.year?.toString() ?: value.scan.identification.yearText, value.item.grade?.name?.replace('_', ' '))
+                        .filter(String::isNotBlank).joinToString(" · "),
+                    style = MaterialTheme.typography.bodySmall,
+                )
             }
             MoneyText(value.range.midpoint, style = MaterialTheme.typography.titleMedium)
         }
