@@ -9,6 +9,7 @@ import android.graphics.Path
 import android.graphics.Rect
 import android.graphics.RectF
 import app.novushq.coinlens.model.ScanRecord
+import app.novushq.coinlens.model.ValueRange
 import app.novushq.coinlens.model.toDisplayString
 
 data class SharePalette(
@@ -63,11 +64,11 @@ object ShareCardRenderer {
         paint.typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
         paint.textSize = 26f
         paint.color = palette.secondary
-        val metadata = listOfNotNull(
-            coin.country.takeIf(String::isNotBlank),
-            (coin.year?.toString() ?: coin.yearText).takeIf(String::isNotBlank),
-            (coin.mintMark ?: coin.mint).takeIf { !it.isNullOrBlank() },
-        ).joinToString(" · ").uppercase()
+        val metadata = formatMetadata(
+            coin.country,
+            coin.year?.toString() ?: coin.yearText,
+            coin.mintMark ?: coin.mint,
+        )
         canvas.drawText(metadata, INSET, 930f, paint)
 
         if (coin.recognized) {
@@ -84,6 +85,7 @@ object ShareCardRenderer {
                     1098f,
                     paint,
                 )
+
                 paint.color = palette.primary
                 paint.textSize = 25f
                 canvas.drawText(context.getString(R.string.share_confidence, coin.value.confidence.name), INSET, 1152f, paint)
@@ -111,6 +113,18 @@ object ShareCardRenderer {
         while (bounds.outWidth / sample > 1200 || bounds.outHeight / sample > 1200) sample *= 2
         return BitmapFactory.decodeFile(path, BitmapFactory.Options().apply { inSampleSize = sample })
     }
+
+    /** Pure card text: "$low – $high", e.g. "$0.10 – $25.00". Mirrors R.string.share_range. */
+    fun formatValueRange(range: ValueRange): String =
+        "${range.low.toDisplayString()} – ${range.high.toDisplayString()}"
+
+    /** Pure card metadata line: non-blank parts of country, year and mint joined with " · ". */
+    fun formatMetadata(country: String?, year: String?, mint: String?): String =
+        listOfNotNull(
+            country?.takeIf(String::isNotBlank),
+            year?.takeIf(String::isNotBlank),
+            mint?.takeIf { it.isNotBlank() },
+        ).joinToString(" · ").uppercase()
 
     private fun centerCrop(bitmap: Bitmap): Rect {
         val side = minOf(bitmap.width, bitmap.height)
