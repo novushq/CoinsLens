@@ -146,7 +146,10 @@ private fun ShareContent(
                 if (saveToPhotos) {
                     message = R.string.share_saved
                 } else if (output != null) {
-                    val uri = FileProvider.getUriForFile(context, "${context.packageName}.share", output)
+                    // App shell declares the FileProvider as <appId>.fileprovider with a
+                    // cache-path root, which covers cacheDir/share/; a second provider in
+                    // this module's manifest conflicts at manifest-merge time, so reuse it.
+                    val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", output)
                     val send = Intent(Intent.ACTION_SEND).apply {
                         type = "image/png"
                         putExtra(Intent.EXTRA_STREAM, uri)
