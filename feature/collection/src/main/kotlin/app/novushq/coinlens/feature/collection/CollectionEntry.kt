@@ -47,6 +47,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
+import app.novushq.coinlens.common.AppError
 import app.novushq.coinlens.common.UiState
 import app.novushq.coinlens.designsystem.component.BackIconButton
 import app.novushq.coinlens.designsystem.component.CoinFrame
@@ -57,15 +58,29 @@ import app.novushq.coinlens.designsystem.component.PrimaryButton
 import app.novushq.coinlens.designsystem.component.SectionHeader
 import app.novushq.coinlens.designsystem.component.TertiaryButton
 import app.novushq.coinlens.designsystem.component.UiStateSurface
+import app.novushq.coinlens.designsystem.theme.CoinLensTheme
 import app.novushq.coinlens.designsystem.theme.Sizes
 import app.novushq.coinlens.designsystem.theme.Spacing
+import app.novushq.coinlens.designsystem.theme.ThemePreviews
+import app.novushq.coinlens.model.CoinIdentification
+import app.novushq.coinlens.model.CollectionItem
+import app.novushq.coinlens.model.CollectionSummary
+import app.novushq.coinlens.model.Confidence
 import app.novushq.coinlens.model.Folder
 import app.novushq.coinlens.model.Grade
+import app.novushq.coinlens.model.ItemKind
 import app.novushq.coinlens.model.Money
+import app.novushq.coinlens.model.ScanRecord
+import app.novushq.coinlens.model.ValueEstimate
 import app.novushq.coinlens.model.ValueRange
 import app.novushq.coinlens.model.ValuedItem
+import app.novushq.coinlens.model.usd
 import app.novushq.coinlens.navigation.AppNavigator
+import app.novushq.coinlens.navigation.NavCommand
 import app.novushq.coinlens.navigation.Route
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
+import java.time.Instant
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
@@ -95,9 +110,9 @@ private fun CollectionDestination(navigator: AppNavigator, viewModel: Collection
     Box(Modifier.fillMaxSize()) {
         UiStateSurface(state = state, onRetry = viewModel::retry) { data ->
             when {
-                data.item != null -> ItemScreen(data.item, data.folders, viewModel, navigator)
-                data.folder != null -> FolderScreen(data.folder.folder, data.folder.items, viewModel, navigator)
-                else -> CollectionScreen(data, viewModel, navigator)
+                data.item != null -> ItemScreen(data.item, data.folders, viewModel::onAction, navigator)
+                data.folder != null -> FolderScreen(data.folder.folder, data.folder.items, viewModel::onAction, navigator)
+                else -> CollectionScreen(data, viewModel::onAction, navigator)
             }
         }
     }
@@ -105,7 +120,7 @@ private fun CollectionDestination(navigator: AppNavigator, viewModel: Collection
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CollectionScreen(data: CollectionScreenData, viewModel: CollectionViewModel, navigator: AppNavigator) {
+private fun CollectionScreen(data: CollectionScreenData, onAction: (CollectionAction) -> Unit, navigator: AppNavigator) {
     var newFolder by remember { mutableStateOf(false) }
     var name by remember { mutableStateOf("") }
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
@@ -174,7 +189,7 @@ private fun CollectionScreen(data: CollectionScreenData, viewModel: CollectionVi
         title = { Text(stringResource(R.string.collection_create_folder)) },
         text = { OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text(stringResource(R.string.collection_folder_name)) }, singleLine = true) },
         confirmButton = {
-            TextButton(onClick = { viewModel.createFolder(name); name = ""; newFolder = false }, enabled = name.isNotBlank()) { Text(stringResource(R.string.collection_create)) }
+            TextButton(onClick = { onAction(CollectionAction.CreateFolder(name)); name = ""; newFolder = false }, enabled = name.isNotBlank()) { Text(stringResource(R.string.collection_create)) }
         },
         dismissButton = { TextButton(onClick = { newFolder = false }) { Text(stringResource(R.string.collection_cancel)) } },
     )
@@ -182,7 +197,7 @@ private fun CollectionScreen(data: CollectionScreenData, viewModel: CollectionVi
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun FolderScreen(folder: Folder, items: List<ValuedItem>, viewModel: CollectionViewModel, navigator: AppNavigator) {
+private fun FolderScreen(folder: Folder, items: List<ValuedItem>, onAction: (CollectionAction) -> Unit, navigator: AppNavigator) {
     var sort by remember { mutableIntStateOf(0) }
     var confirmDelete by remember { mutableStateOf(false) }
     var editName by remember { mutableStateOf(false) }
@@ -238,21 +253,21 @@ private fun FolderScreen(folder: Folder, items: List<ValuedItem>, viewModel: Col
     if (editName) AlertDialog(
         onDismissRequest = { editName = false }, title = { Text(stringResource(R.string.collection_rename)) },
         text = { OutlinedTextField(value = name, onValueChange = { name = it }, singleLine = true, label = { Text(stringResource(R.string.collection_folder_name)) }) },
-        confirmButton = { TextButton(onClick = { viewModel.renameFolder(folder.id, name); editName = false }, enabled = name.isNotBlank()) { Text(stringResource(R.string.collection_save)) } },
+        confirmButton = { TextButton(onClick = { onAction(CollectionAction.RenameFolder(folder.id, name)); editName = false }, enabled = name.isNotBlank()) { Text(stringResource(R.string.collection_save)) } },
         dismissButton = { TextButton(onClick = { editName = false }) { Text(stringResource(R.string.collection_cancel)) } },
     )
     if (confirmDelete) AlertDialog(
         onDismissRequest = { confirmDelete = false },
         title = { Text(stringResource(R.string.collection_delete_folder_title, folder.name)) },
         text = { Text(stringResource(R.string.collection_delete_folder_body, folder.itemCount)) },
-        confirmButton = { TextButton(onClick = { viewModel.deleteFolder(folder.id); navigator.back() }) { Text(stringResource(R.string.collection_delete)) } },
+        confirmButton = { TextButton(onClick = { onAction(CollectionAction.DeleteFolder(folder.id)); navigator.back() }) { Text(stringResource(R.string.collection_delete)) } },
         dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text(stringResource(R.string.collection_cancel)) } },
     )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ItemScreen(value: ValuedItem, folders: List<Folder>, viewModel: CollectionViewModel, navigator: AppNavigator) {
+private fun ItemScreen(value: ValuedItem, folders: List<Folder>, onAction: (CollectionAction) -> Unit, navigator: AppNavigator) {
     val current = value.item
     var grade by remember(current.id) { mutableStateOf(current.grade ?: Grade.GOOD) }
     var notes by remember(current.id) { mutableStateOf(current.gradeNotes) }
@@ -336,7 +351,7 @@ private fun ItemScreen(value: ValuedItem, folders: List<Folder>, viewModel: Coll
                         val cents = runCatching {
                             price.toBigDecimalOrNull()?.movePointRight(2)?.setScale(0, RoundingMode.HALF_UP)?.longValueExact()
                         }.getOrNull()
-                        viewModel.updateItem(current.copy(grade = grade, gradeNotes = notes, purchasePrice = cents?.let(::Money), quantity = quantity.toIntOrNull()?.coerceAtLeast(1) ?: 1, folderId = folderId))
+                        onAction(CollectionAction.UpdateItem(current.copy(grade = grade, gradeNotes = notes, purchasePrice = cents?.let(::Money), quantity = quantity.toIntOrNull()?.coerceAtLeast(1) ?: 1, folderId = folderId)))
                     },
                     modifier = Modifier.fillMaxWidth(),
                     icon = Icons.Outlined.Check,
@@ -349,7 +364,7 @@ private fun ItemScreen(value: ValuedItem, folders: List<Folder>, viewModel: Coll
     if (confirmDelete) AlertDialog(
         onDismissRequest = { confirmDelete = false }, title = { Text(stringResource(R.string.collection_delete_item_title)) },
         text = { Text(stringResource(R.string.collection_delete_item_body)) },
-        confirmButton = { TextButton(onClick = { viewModel.deleteItem(current.id); navigator.back() }) { Text(stringResource(R.string.collection_delete)) } },
+        confirmButton = { TextButton(onClick = { onAction(CollectionAction.DeleteItem(current.id)); navigator.back() }) { Text(stringResource(R.string.collection_delete)) } },
         dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text(stringResource(R.string.collection_cancel)) } },
     )
 }
@@ -373,6 +388,108 @@ private fun FolderRow(folder: Folder, onClick: () -> Unit) {
                 Text(pluralStringResource(R.plurals.collection_items, folder.itemCount, folder.itemCount), style = MaterialTheme.typography.bodySmall)
             }
             MoneyText(folder.totalValue, style = MaterialTheme.typography.titleMedium)
+        }
+    }
+}
+
+private object PreviewNavigator : AppNavigator {
+    override val commands: Flow<NavCommand> = emptyFlow()
+    override fun navigate(route: Route, popUpTo: Route?, inclusive: Boolean) = Unit
+    override fun replaceAll(route: Route) = Unit
+    override fun back() = Unit
+}
+
+private fun previewIdentification() = CoinIdentification(
+    kind = ItemKind.COIN,
+    name = "Wheat cent",
+    country = "USA",
+    denomination = "1 cent",
+    year = 1943,
+    value = ValueEstimate(
+        circulated = ValueRange(usd(1.0), usd(3.0)),
+        uncirculated = ValueRange(usd(10.0), usd(20.0)),
+        confidence = Confidence.MEDIUM,
+    ),
+)
+
+private fun previewItem(id: String, folderId: String? = "f1") = ValuedItem(
+    item = CollectionItem(
+        id = id,
+        scanId = "s1",
+        folderId = folderId,
+        grade = Grade.VERY_FINE,
+        purchasePrice = usd(2.0),
+        quantity = 1,
+        addedAt = Instant.now(),
+    ),
+    scan = ScanRecord(
+        id = "s1",
+        createdAt = Instant.now(),
+        obversePath = "",
+        identification = previewIdentification(),
+    ),
+)
+
+private fun previewData() = CollectionScreenData(
+    folders = listOf(
+        Folder(id = "f1", name = "Wheat cents", createdAt = Instant.now(), itemCount = 12, totalValue = usd(24.0)),
+    ),
+    summary = CollectionSummary(
+        itemCount = 13,
+        totalLow = usd(10.0),
+        totalHigh = usd(30.0),
+        totalMid = usd(20.0),
+        totalCost = usd(15.0),
+    ),
+    items = listOf(previewItem("i1", folderId = null)),
+)
+
+@ThemePreviews
+@Composable
+private fun CollectionContentPreview() {
+    CoinLensTheme { CollectionScreen(data = previewData(), onAction = {}, navigator = PreviewNavigator) }
+}
+
+@ThemePreviews
+@Composable
+private fun CollectionEmptyPreview() {
+    CoinLensTheme { CollectionScreen(data = CollectionScreenData(), onAction = {}, navigator = PreviewNavigator) }
+}
+
+@ThemePreviews
+@Composable
+private fun FolderContentPreview() {
+    CoinLensTheme {
+        FolderScreen(
+            folder = Folder(id = "f1", name = "Wheat cents", createdAt = Instant.now(), itemCount = 2, totalValue = usd(24.0)),
+            items = listOf(previewItem("i1"), previewItem("i2")),
+            onAction = {},
+            navigator = PreviewNavigator,
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+private fun ItemContentPreview() {
+    CoinLensTheme {
+        ItemScreen(
+            value = previewItem("i1"),
+            folders = listOf(Folder(id = "f1", name = "Wheat cents", createdAt = Instant.now())),
+            onAction = {},
+            navigator = PreviewNavigator,
+        )
+    }
+}
+
+@ThemePreviews
+@Composable
+private fun CollectionStatesPreview() {
+    CoinLensTheme {
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+            UiStateSurface(state = UiState.Loading, onRetry = {}) {}
+            UiStateSurface(state = UiState.Empty(), onRetry = {}) {}
+            UiStateSurface(state = UiState.Error(AppError.Unknown()), onRetry = {}) {}
         }
     }
 }
