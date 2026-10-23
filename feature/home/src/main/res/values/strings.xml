@@ -1,25 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="home_title">CoinLens</string>
-    <string name="home_eyebrow">A quieter way to collect</string>
-    <string name="home_headline">Every coin has a story.</string>
-    <string name="home_intro">Find out what you’re holding, then keep the details close.</string>
-    <string name="home_free_badge">%1$d FREE SCANS LEFT</string>
-    <string name="home_pro_badge">PRO MEMBER</string>
-    <string name="home_scan_title">Start with one coin</string>
-    <string name="home_scan_description">Take a clear photo. Your first result has no ads.</string>
-    <string name="home_scan_action">Identify a coin</string>
+    <string name="home_worth_label">Total worth</string>
+    <string name="home_scan">Scan coin</string>
     <string name="home_view_plans">View plans</string>
-    <string name="home_quota_used">Your free scan is used. Visit your plan to keep identifying.</string>
-    <string name="home_collection">Your cabinet</string>
+    <plurals name="home_allowance_free">
+        <item quantity="one">%d free scan left</item>
+        <item quantity="other">%d free scans left</item>
+    </plurals>
+    <plurals name="home_allowance_bonus">
+        <item quantity="one">%d bonus scan available</item>
+        <item quantity="other">%d bonus scans available</item>
+    </plurals>
+    <string name="home_allowance_none">Free scan used — go Pro or watch an ad for one more</string>
+    <string name="home_empty">Scan your first coin — it\'s free</string>
+    <string name="home_collection">Collection</string>
     <plurals name="home_piece_count">
         <item quantity="one">%d piece</item>
         <item quantity="other">%d pieces</item>
     </plurals>
-    <string name="home_no_estimate">COLLECTION VALUE</string>
-    <string name="home_total_estimate">ESTIMATED VALUE</string>
-    <string name="home_cabinet_empty">Your collection starts here</string>
     <string name="home_recent">Recent scans</string>
     <string name="home_recent_empty">Your first identification will appear here.</string>
     <string name="home_see_all">See all</string>
+    <string name="home_cd_collection">Open collection</string>
+    <string name="home_cd_settings">Open settings</string>
 </resources>
