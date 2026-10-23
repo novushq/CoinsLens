@@ -28,4 +28,7 @@
     <string name="settings_ai_live">Identification engine · Gemini (%1$s)</string>
     <string name="settings_disclaimer">Values are estimates only. Condition, authenticity, and market demand affect value. Get an in-hand appraisal before selling.</string>
     <string name="settings_done">Done</string>
+    <string name="settings_open_link_error">Could not open that link.</string>
+    <string name="settings_version">App version · %1$s</string>
+    <string name="settings_reset_onboarding">Reset onboarding (debug)</string>
 </resources>
