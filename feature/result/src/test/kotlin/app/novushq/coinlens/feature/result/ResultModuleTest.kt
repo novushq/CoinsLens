@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import app.novushq.coinlens.data.ScanDraft
 import app.novushq.coinlens.domain.AddToCollectionUseCase
+import app.novushq.coinlens.domain.CollectionRepository
 import app.novushq.coinlens.domain.IdentifyCoinUseCase
 import app.novushq.coinlens.domain.ScanRepository
 import org.junit.Test
@@ -24,6 +25,7 @@ class ResultModuleTest {
                 ScanRepository::class,
                 ScanDraft::class,
                 AddToCollectionUseCase::class,
+                CollectionRepository::class,
             ),
         )
     }

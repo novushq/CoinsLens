@@ -23,4 +23,27 @@
     <string name="result_scan_another">Identify another</string>
     <string name="result_try_again">Try another photo</string>
     <string name="result_added_message">Saved to your cabinet</string>
+    <string name="result_hint_date">Reading the date…</string>
+    <string name="result_hint_mint">Checking mint marks…</string>
+    <string name="result_hint_value">Estimating the value…</string>
+    <string name="result_rarity_common">Common</string>
+    <string name="result_rarity_scarce">Scarce</string>
+    <string name="result_rarity_rare">Rare</string>
+    <string name="result_rarity_very_rare">Very rare</string>
+    <string name="result_rarity_unknown">Rarity unknown</string>
+    <string name="result_add_title">Add to your cabinet</string>
+    <string name="result_folder_label">Folder</string>
+    <string name="result_no_folder">No folder</string>
+    <string name="result_new_folder_hint">New folder name</string>
+    <string name="result_new_folder_create">Create folder</string>
+    <string name="result_grade_label">Grade (optional)</string>
+    <string name="result_no_grade">No grade yet</string>
+    <string name="result_price_label">Purchase price (optional)</string>
+    <string name="result_price_hint">0.00</string>
+    <string name="result_price_error">Enter a valid amount, like 12.50</string>
+    <string name="result_notes_label">Notes (optional)</string>
+    <string name="result_notes_hint">Where you found it, condition details…</string>
+    <string name="result_save">Save to cabinet</string>
+    <string name="result_cancel">Cancel</string>
+    <string name="result_hint_details">About this detail</string>
 </resources>
