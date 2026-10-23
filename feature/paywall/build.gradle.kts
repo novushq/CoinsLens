@@ -10,7 +10,8 @@ val revenueCatApiKey = providers.gradleProperty("revenuecat.apiKey")
     .getOrElse("")
 val rewardedAdUnitId = providers.gradleProperty("admob.rewardedUnitId")
     .orElse(providers.environmentVariable("ADMOB_REWARDED_UNIT_ID"))
-    .getOrElse("ca-app-pub-3940256099942544/5224354917") // Google's sample rewarded unit; swap before release
+    .getOrElse("") // Blank means no ads SDK: FakeRewardedAdGateway simulates the reward.
+// Set admob.rewardedUnitId to Google's sample rewarded unit ca-app-pub-3940256099942544/5224354917 for testing.
 val termsUrl = providers.gradleProperty("coinlens.termsUrl")
     .orElse(providers.environmentVariable("COINLENS_TERMS_URL"))
     .getOrElse("")
@@ -58,6 +59,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.koin.android)
     implementation(libs.koin.androidx.compose)
  implementation(libs.coil.compose)
  implementation(libs.androidx.core.ktx)

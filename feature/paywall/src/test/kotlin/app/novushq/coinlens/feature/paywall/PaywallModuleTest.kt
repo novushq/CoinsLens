@@ -2,6 +2,10 @@ package app.novushq.coinlens.feature.paywall
 
 import android.content.Context
 import androidx.lifecycle.SavedStateHandle
+import app.novushq.coinlens.common.DispatcherProvider
+import app.novushq.coinlens.data.LocalEntitlementRepository
+import app.novushq.coinlens.domain.GrantBonusScanUseCase
+import app.novushq.coinlens.domain.PreferencesRepository
 import org.junit.Test
 import org.koin.core.annotation.KoinExperimentalAPI
 import org.koin.test.verify.verify
@@ -12,6 +16,15 @@ class PaywallModuleTest {
     @OptIn(KoinExperimentalAPI::class)
     @Test
     fun `module definitions verify`() {
-        paywallModule.verify(extraTypes = listOf(Context::class, SavedStateHandle::class))
+        paywallModule.verify(
+            extraTypes = listOf(
+                Context::class,
+                SavedStateHandle::class,
+                LocalEntitlementRepository::class,
+                GrantBonusScanUseCase::class,
+                PreferencesRepository::class,
+                DispatcherProvider::class,
+            ),
+        )
     }
 }

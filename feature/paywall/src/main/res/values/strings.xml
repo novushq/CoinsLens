@@ -8,13 +8,13 @@
     <string name="paywall_detectorist_benefit">Identify worn coins in the field and keep a tidy log of your finds.</string>
     <string name="paywall_plans">Choose a plan</string>
     <string name="paywall_weekly">Weekly</string>
-    <string name="paywall_weekly_price">$4.99 / week · demo</string>
+    <string name="paywall_weekly_price">$4.99 / week (test)</string>
     <string name="paywall_annual">Annual</string>
-    <string name="paywall_annual_price">$29.99 / year · demo</string>
+    <string name="paywall_annual_price">$29.99 / year (test)</string>
     <string name="paywall_trial">3-day free trial</string>
     <string name="paywall_trial_days">%1$d-day free trial</string>
     <string name="paywall_lifetime">Lifetime</string>
-    <string name="paywall_lifetime_price">$59.99 once · demo</string>
+    <string name="paywall_lifetime_price">$59.99 once (test)</string>
     <string name="paywall_selected">Selected</string>
     <string name="paywall_benefits">No ads. Unlimited scans. Local collection folders.</string>
     <string name="paywall_demo_notice">Demo checkout only. Store billing is not configured, and these sample prices are not purchase offers.</string>

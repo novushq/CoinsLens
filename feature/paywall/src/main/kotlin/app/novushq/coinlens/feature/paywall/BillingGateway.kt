@@ -47,9 +47,9 @@ class FakeBillingGateway(private val entitlements: LocalEntitlementRepository) :
 
     override suspend fun loadPlans() = AppResult.Success(
         listOf(
-            BillingPlan(PlanType.WEEKLY),
-            BillingPlan(PlanType.ANNUAL, trialDays = 3),
-            BillingPlan(PlanType.LIFETIME),
+            BillingPlan(PlanType.WEEKLY, localizedPrice = "$4.99 / week (test)"),
+            BillingPlan(PlanType.ANNUAL, localizedPrice = "$29.99 / year (test)", trialDays = 3),
+            BillingPlan(PlanType.LIFETIME, localizedPrice = "$59.99 once (test)"),
         ),
     )
 
@@ -172,13 +172,15 @@ class RevenueCatBillingGateway(private val sdk: RevenueCatSdk) : BillingGateway 
 
 interface RewardedAdGateway {
     val isDemo: Boolean
+    /** Warms up the SDK off the main thread; no-op unless the real SDK needs it. */
+    suspend fun prepare() = Unit
     suspend fun show(activity: Activity): AppResult<Boolean>
 }
 
 class FakeRewardedAdGateway : RewardedAdGateway {
     override val isDemo = true
     override suspend fun show(activity: Activity): AppResult<Boolean> {
-        delay(900)
+        delay(1_000)
         return AppResult.Success(true)
     }
 }
@@ -190,6 +192,10 @@ class AdMobRewardedAdGateway(
 ) : RewardedAdGateway {
     private val appContext = context.applicationContext
     override val isDemo = false
+
+    override suspend fun prepare() {
+        withContext(dispatchers.io) { com.google.android.gms.ads.MobileAds.initialize(appContext) }
+    }
 
     override suspend fun show(activity: Activity): AppResult<Boolean> {
         return try {
