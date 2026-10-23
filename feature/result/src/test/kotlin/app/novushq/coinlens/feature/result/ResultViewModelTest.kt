@@ -34,13 +34,16 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
 class ResultViewModelTest {
     private val now = Instant.parse("2026-09-27T10:00:00Z")
 
-    private class Deps(
+    private inner class Deps(
         val engine: FakeEngine,
         val scans: FakeScanRepository = FakeScanRepository(),
         val images: FakeImageStore = FakeImageStore(),
