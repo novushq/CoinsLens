@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="onboarding_promise_kicker">COINLENS · KNOW YOUR COINS</string>
+    <string name="onboarding_promise_title">Know what your coins are worth</string>
+    <string name="onboarding_promise_body">Scan a coin and get an honest estimate in under a minute.</string>
+    <string name="onboarding_wedge_free">Your first scan is free</string>
+    <string name="onboarding_wedge_no_ads">No ads before your result</string>
+    <string name="onboarding_wedge_ranges">Honest value ranges, not hype</string>
     <string name="onboarding_title">What brings you here?</string>
     <string name="onboarding_kicker">COINLENS · A FIELD GUIDE</string>
     <string name="onboarding_intro">We’ll tailor the details to what you collect. No accounts, ads before your first result, or guesswork disguised as certainty.</string>
@@ -11,9 +17,11 @@
     <string name="onboarding_camera_title">Let’s look closer.</string>
     <string name="onboarding_camera_body">A well-lit photo of the front helps us read the date, mint mark, and small details. You can add the reverse too.</string>
     <string name="onboarding_privacy">Choose a photo when you’re ready. CoinLens keeps your collection on this device.</string>
+    <string name="onboarding_camera_cta">Enable camera</string>
+    <string name="onboarding_camera_skip">Not now</string>
     <string name="onboarding_continue">Continue</string>
     <string name="onboarding_start">Choose a coin photo</string>
     <string name="onboarding_skip">Skip for now</string>
-    <string name="onboarding_step">%1$d OF 2</string>
+    <string name="onboarding_step">%1$d OF %2$d</string>
     <string name="onboarding_save_error">Could not save this choice. Try again.</string>
 </resources>

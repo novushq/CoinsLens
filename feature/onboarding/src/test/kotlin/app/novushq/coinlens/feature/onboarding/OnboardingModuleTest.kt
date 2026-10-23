@@ -2,6 +2,8 @@ package app.novushq.coinlens.feature.onboarding
 
 import android.content.Context
 import androidx.lifecycle.SavedStateHandle
+import app.novushq.coinlens.common.DispatcherProvider
+import app.novushq.coinlens.domain.CompleteOnboardingUseCase
 import org.junit.Test
 import org.koin.core.annotation.KoinExperimentalAPI
 import org.koin.test.verify.verify
@@ -12,6 +14,13 @@ class OnboardingModuleTest {
     @OptIn(KoinExperimentalAPI::class)
     @Test
     fun `module definitions verify`() {
-        onboardingModule.verify(extraTypes = listOf(Context::class, SavedStateHandle::class))
+        onboardingModule.verify(
+            extraTypes = listOf(
+                Context::class,
+                SavedStateHandle::class,
+                DispatcherProvider::class,
+                CompleteOnboardingUseCase::class,
+            ),
+        )
     }
 }
