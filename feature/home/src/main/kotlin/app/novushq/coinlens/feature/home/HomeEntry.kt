@@ -14,7 +14,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.PhotoCamera
-import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -97,24 +97,28 @@ private fun HomeContent(
             .nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            CenterAlignedTopAppBar(
+            TopAppBar(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         CoinFrame(
                             obverse = null,
                             contentDescription = null,
-                            size = Sizes.coinFrameSmall,
+                            size = Sizes.coinFrameTiny,
                         )
                         Text(
                             text = stringResource(R.string.home_title),
                             modifier = Modifier
                                 .padding(start = Spacing.sm)
                                 .semantics { heading() },
-                            style = MaterialTheme.typography.titleMedium,
+                            style = MaterialTheme.typography.titleLarge,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
                     }
                 },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                ),
                 scrollBehavior = scrollBehavior,
             )
         },
@@ -209,6 +213,15 @@ private fun HomeContent(
                                 scan.identification.value.circulated?.let { MoneyRangeText(it) }
                             }
                         }
+                    }
+                }
+                if (!data.allowance.isPro) {
+                    item(key = "ad-banner") {
+                        Surface(
+                            shape = MaterialTheme.shapes.medium,
+                            color = MaterialTheme.colorScheme.surfaceContainerLow,
+                            border = BorderStroke(Stroke.hairline, MaterialTheme.colorScheme.outlineVariant),
+                        ) { AdBanner() }
                     }
                 }
                 item { DisclaimerText() }

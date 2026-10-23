@@ -43,6 +43,7 @@ object Sizes {
     val coinFrameLarge = 200.dp
     val coinFrameMedium = 120.dp
     val coinFrameSmall = 56.dp
+    val coinFrameTiny = 36.dp
     val coinRing = 2.dp
     val minTouch = 48.dp
     val buttonHeight = 56.dp

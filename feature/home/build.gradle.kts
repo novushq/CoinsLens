@@ -5,6 +5,10 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+val bannerAdUnitId = providers.gradleProperty("admob.bannerUnitId")
+    .orElse(providers.environmentVariable("ADMOB_BANNER_UNIT_ID"))
+    .getOrElse("ca-app-pub-3940256099942544/9214589741") // Google's sample banner unit; swap before release
+
 android {
     namespace = "app.novushq.coinlens.feature.home"
     compileSdk = 36
@@ -13,6 +17,7 @@ android {
         minSdk = 26
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
+        buildConfigField("String", "ADMOB_BANNER_UNIT_ID", "\"$bannerAdUnitId\"")
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -20,6 +25,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -42,6 +48,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.koin.androidx.compose)
     implementation(libs.coil.compose)
+    implementation(libs.play.services.ads)
     debugImplementation(libs.androidx.ui.tooling)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

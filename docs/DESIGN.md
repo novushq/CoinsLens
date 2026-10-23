@@ -1,14 +1,15 @@
 # CoinLens — design
 
-**Mood:** a museum label under a loupe — warm, precise, trustworthy. Numbers are the hero.
+**Mood:** a museum label under a loupe — calm, precise, trustworthy; verdigris patina with gold accents. Numbers are the hero.
 
 ## Colour
-- Seed **#8C6A2F** (aged brass). Chosen because every coin photo sits well against warm metal tones, and gold reads as "value" without looking like a finance app.
-- Light: surfaces warm off-white `#FBF8F2`-ish from the tonal palette (`surface`, `surfaceContainerLow`), text near-black warm neutral. Dark: deep warm charcoal surfaces (tone 6–12 of the neutral palette, not grey), brass primary at tone 80.
+- Seed **#1F7A6D** (verdigris, the patina on aged copper coins). Cool green-teal surfaces make warm coin photos pop, and the metallic gold from `coinExtras` keeps the "value" cue without looking like a finance app.
+- Light: surfaces pale mint-white (`#F6FAF8`) from the tonal palette, text near-black. Dark: deep green-charcoal surfaces (tone 6–12 of the neutral palette, not flat grey), verdigris primary at tone 80.
 - Accent (primary) is used once per screen: the scan/shutter action or the primary CTA.
 - Confidence colours come from the scheme: HIGH → `primary`, MEDIUM → `tertiary`, LOW → `error`; always paired with an icon (verified / help / warning) and the word.
 - Brand extensions (`coinExtras`, light + dark): `goldBright`/`goldDeep` metallic stops for the coin ring, hero and value-band gradients; `success`/`successContainer` green pair for success states (tertiary is reserved for MEDIUM confidence).
-- Dynamic colour supported but off by default (the brass identity matters in screenshots).
+- Dynamic colour supported but off by default (the verdigris identity matters in screenshots).
+- Launcher icon and splash keep the brass coin mark; only the backdrop follows the theme.
 
 ## Type
 - Display/headline: `FontFamily.Serif` (system serif), weights 600; used for coin names and the big total value — the "museum label" feel.
@@ -29,11 +30,11 @@
 1. **`CoinFrame`** — circular photo with a metallic gold gradient ring, outer hairline, soft shadow and a subtle inner shadow, obverse/reverse flip on tap.
 2. **`ValueRangeBar`** — a horizontal track showing circulated band (tonal) and uncirculated band (gold gradient) on one scale with low/high tabular labels; confidence pill at the right end.
 3. **Museum label result card** — serif name, a small-caps metadata row (COUNTRY · YEAR · MINT), `BrassDivider` (hairlines + brass diamond), hairline detail rows.
-4. **`HeroCard`** — warm gradient feature card with faint concentric loupe rings; home for the scan invitation and paywall pitch.
+4. **`HeroCard`** — verdigris gradient feature card with gold concentric loupe rings; home for the scan invitation and paywall pitch.
 5. **`ShutterButton`** — 72dp brass-ringed camera button with spring press and haptic.
 
 ## Components in `:core:designsystem`
 `CoinLensTheme` (+ `coinExtras`), `Spacing`, `Stroke`, `Elevations`, `CoinFrame`, `ValueRangeBar`, `ConfidencePill`, `PossibleHintChip` ("Possible doubled die"), `MoneyText`, `UiStateSurface` (shimmer skeleton/empty/error/success), `PrimaryButton` (the one accent action), `SecondaryButton` (tonal second action), `TertiaryButton` (quiet outlined third action), `ShutterButton`, `HeroCard`, `BrassDivider`, `SelectableCard` (selected-state option card), `BackIconButton` / `CloseIconButton` (top-bar navigation), `SectionHeader`, `DisclaimerText`.
 
 ## Navigation
-Top-level destinations (Home, Cabinet, Settings) live in a `NavigationBar` owned by `:app`. Pushed screens use M3 top app bars with a back icon; the fresh result is terminal and closes to Home. Screen transitions are fade + 1/4-width slide at `Motion.MEDIUM`.
+Top-level destinations (Home, Cabinet, Settings) live in a `NavigationBar` owned by `:app`, on `surfaceContainer`. Home uses a left-aligned compact top bar (`Sizes.coinFrameTiny` brand mark). Pushed screens use M3 top app bars with a back icon; the fresh result is terminal and closes to Home. Screen transitions are fade + 1/4-width slide at `Motion.MEDIUM`.

@@ -18,13 +18,14 @@ Set these environment variables in the build environment, or equivalent Gradle p
 |---|---|---|
 | `REVENUECAT_API_KEY` | `revenuecat.apiKey` | RevenueCat public Android SDK key |
 | `ADMOB_APP_ID` | `admob.appId` | AdMob app ID |
-| `ADMOB_REWARDED_UNIT_ID` | `admob.rewardedUnitId` | Rewarded ad unit ID |
+| `ADMOB_REWARDED_UNIT_ID` | `admob.rewardedUnitId` | Rewarded ad unit ID (default: Google sample `ca-app-pub-3940256099942544/5224354917`) |
+| `ADMOB_BANNER_UNIT_ID` | `admob.bannerUnitId` | Home banner unit ID (default: Google sample `ca-app-pub-3940256099942544/9214589741`) |
 | `COINLENS_TERMS_URL` | `coinlens.termsUrl` | Published terms of service URL |
 | `COINLENS_PRIVACY_URL` | `coinlens.privacyUrl` | Published privacy policy URL |
 
 Configure RevenueCat offering with weekly, annual, and lifetime packages and a `pro` entitlement. Configure the annual package with the intended trial in Play Console and RevenueCat; CoinLens reads its price and trial from the store package. AdMob app ID defaults to Google's test ID for local builds; supply your production ID and rewarded unit before release.
 
-Without RevenueCat credentials, paywall uses clearly labelled sample prices and a local-only demo entitlement. Without a rewarded unit ID, its button simulates a short ad. Neither mode bills users or serves real ads.
+Without RevenueCat credentials, paywall uses clearly labelled sample prices and a local-only demo entitlement. Rewarded and banner units default to Google's sample units, so real (test-labelled) ads render on device with no setup; set the unit IDs to your own before release. Neither mode bills users or serves real ads.
 
 ## Sign and build release
 

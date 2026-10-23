@@ -40,6 +40,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import app.novushq.coinlens.designsystem.theme.CoinLensTheme
+import app.novushq.coinlens.designsystem.theme.Elevations
 import app.novushq.coinlens.designsystem.theme.Motion
 import app.novushq.coinlens.feature.capture.captureGraph
 import app.novushq.coinlens.feature.collection.collectionGraph
@@ -102,7 +103,10 @@ private fun CoinLensNavHost(startDestination: Route, navigator: AppNavigator) {
     Scaffold(
         bottomBar = {
             if (currentTopLevel != null) {
-                NavigationBar {
+                NavigationBar(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    tonalElevation = Elevations.card,
+                ) {
                     TopLevelDestinations.forEach { item ->
                         val selected = item == currentTopLevel
                         NavigationBarItem(

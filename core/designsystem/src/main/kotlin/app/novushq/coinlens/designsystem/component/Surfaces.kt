@@ -23,14 +23,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.drawscope.Stroke as DrawStroke
 import androidx.compose.ui.graphics.graphicsLayer
 import app.novushq.coinlens.designsystem.theme.Elevations
+import app.novushq.coinlens.designsystem.theme.coinExtras
 import app.novushq.coinlens.designsystem.theme.Sizes
 import app.novushq.coinlens.designsystem.theme.Spacing
 import app.novushq.coinlens.designsystem.theme.Stroke
 
 /**
- * Warm gradient feature card with faint concentric "loupe rings" in the top-end
+ * Verdigris gradient feature card with gold concentric "loupe rings" in the top-end
  * corner. Home for the one hero block per screen (scan invitation, paywall pitch).
  * Content inherits [onPrimaryContainer]-friendly tones: use
  * [androidx.compose.material3.MaterialTheme.colorScheme.onPrimaryContainer] for text.
@@ -41,23 +43,24 @@ fun HeroCard(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
+    val gold = coinExtras.goldBright
     Box(
         modifier = modifier
             .shadow(Elevations.hero, MaterialTheme.shapes.large, clip = false)
             .clip(MaterialTheme.shapes.large)
             .background(
                 Brush.linearGradient(
-                    listOf(scheme.primaryContainer, scheme.secondaryContainer, scheme.primaryContainer),
+                    listOf(scheme.primaryContainer, scheme.secondaryContainer, scheme.surfaceContainerLow),
                 ),
             )
             .border(Stroke.hairline, scheme.primary.copy(alpha = 0.25f), MaterialTheme.shapes.large),
     ) {
         Canvas(Modifier.matchParentSize()) {
             val origin = Offset(size.width * 0.92f, -size.height * 0.12f)
-            val ring = scheme.primary.copy(alpha = 0.10f)
-            drawCircle(ring, radius = size.minDimension * 0.55f, center = origin)
-            drawCircle(ring, radius = size.minDimension * 0.40f, center = origin)
-            drawCircle(scheme.primary.copy(alpha = 0.16f), radius = size.minDimension * 0.25f, center = origin)
+            val ringStroke = DrawStroke(width = Stroke.hairline.toPx() * 1.5f)
+            drawCircle(gold.copy(alpha = 0.55f), radius = size.minDimension * 0.55f, center = origin, style = ringStroke)
+            drawCircle(gold.copy(alpha = 0.40f), radius = size.minDimension * 0.40f, center = origin, style = ringStroke)
+            drawCircle(gold.copy(alpha = 0.30f), radius = size.minDimension * 0.25f, center = origin)
         }
         Column(
             modifier = Modifier

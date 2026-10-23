@@ -10,7 +10,7 @@ val revenueCatApiKey = providers.gradleProperty("revenuecat.apiKey")
     .getOrElse("")
 val rewardedAdUnitId = providers.gradleProperty("admob.rewardedUnitId")
     .orElse(providers.environmentVariable("ADMOB_REWARDED_UNIT_ID"))
-    .getOrElse("")
+    .getOrElse("ca-app-pub-3940256099942544/5224354917") // Google's sample rewarded unit; swap before release
 val termsUrl = providers.gradleProperty("coinlens.termsUrl")
     .orElse(providers.environmentVariable("COINLENS_TERMS_URL"))
     .getOrElse("")
