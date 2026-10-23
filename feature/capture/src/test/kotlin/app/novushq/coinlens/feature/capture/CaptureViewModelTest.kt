@@ -8,6 +8,7 @@ import app.novushq.coinlens.testing.FakePreferences
 import app.novushq.coinlens.testing.MainDispatcherRule
 import app.cash.turbine.test
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -43,7 +44,7 @@ class CaptureViewModelTest {
     }
 
     @Test
-    fun `exhausted allowance flags quota and redirects once`() {
+    fun `exhausted allowance flags quota and redirects once`() = runTest {
         val vm = viewModel(used = 1)
         assertTrue(content(vm).quotaExhausted)
         vm.events.test {
@@ -66,9 +67,11 @@ class CaptureViewModelTest {
         vm.onPhotoSaved(back)
         assertArrayEquals(back, content(vm).backBytes)
 
-        vm.events.test {
-            vm.onDone()
-            assertEquals(CaptureEvent.NavigateResult, awaitItem())
+        runTest {
+            vm.events.test {
+                vm.onDone()
+                assertEquals(CaptureEvent.NavigateResult, awaitItem())
+            }
         }
         assertArrayEquals(front, draft.current.obverse)
         assertArrayEquals(back, draft.current.reverse)
@@ -81,9 +84,11 @@ class CaptureViewModelTest {
         val front = byteArrayOf(7, 8)
         vm.onPhotoSaved(front)
 
-        vm.events.test {
-            vm.onSkipBack()
-            assertEquals(CaptureEvent.NavigateResult, awaitItem())
+        runTest {
+            vm.events.test {
+                vm.onSkipBack()
+                assertEquals(CaptureEvent.NavigateResult, awaitItem())
+            }
         }
         assertArrayEquals(front, draft.current.obverse)
         assertEquals(null, draft.current.reverse)

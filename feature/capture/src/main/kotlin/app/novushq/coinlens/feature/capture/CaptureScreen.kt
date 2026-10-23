@@ -49,8 +49,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -523,14 +526,12 @@ private fun CameraPreview(
         Canvas(modifier = Modifier.matchParentSize()) {
             if (request != null) {
                 val radius = (diameter.toPx()) / 2f
-                drawContext.canvas.saveLayer(null, null)
-                drawRect(color = scrim)
-                drawCircle(
-                    color = Color.Transparent,
-                    radius = radius,
-                    blendMode = BlendMode.Clear,
-                )
-                drawContext.canvas.restore()
+                val cutout = Path().apply {
+                    addRect(Rect(offset = Offset.Zero, size = size))
+                    addOval(Rect(center = center, radius = radius))
+                    fillType = PathFillType.EvenOdd
+                }
+                drawPath(path = cutout, color = scrim)
                 drawCircle(color = ring, radius = radius, style = Stroke(width = Sizes.coinRing.toPx()))
             }
         }

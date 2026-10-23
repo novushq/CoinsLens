@@ -2,6 +2,8 @@ package app.novushq.coinlens.feature.capture
 
 import android.content.Context
 import androidx.lifecycle.SavedStateHandle
+import app.novushq.coinlens.data.ScanDraft
+import app.novushq.coinlens.domain.ObserveScanAllowanceUseCase
 import org.junit.Test
 import org.koin.core.annotation.KoinExperimentalAPI
 import org.koin.test.verify.verify
@@ -12,6 +14,13 @@ class CaptureModuleTest {
     @OptIn(KoinExperimentalAPI::class)
     @Test
     fun `module definitions verify`() {
-        captureModule.verify(extraTypes = listOf(Context::class, SavedStateHandle::class))
+        captureModule.verify(
+            extraTypes = listOf(
+                Context::class,
+                SavedStateHandle::class,
+                ObserveScanAllowanceUseCase::class,
+                ScanDraft::class,
+            ),
+        )
     }
 }
