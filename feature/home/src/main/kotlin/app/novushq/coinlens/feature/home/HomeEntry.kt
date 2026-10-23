@@ -1,25 +1,29 @@
 package app.novushq.coinlens.feature.home
 
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.PhotoCamera
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,23 +39,24 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
+import app.novushq.coinlens.common.AppError
 import app.novushq.coinlens.common.UiState
 import app.novushq.coinlens.designsystem.component.CoinFrame
 import app.novushq.coinlens.designsystem.component.DisclaimerText
-import app.novushq.coinlens.designsystem.component.HeroCard
+import app.novushq.coinlens.designsystem.component.EmptyState
 import app.novushq.coinlens.designsystem.component.MoneyRangeText
 import app.novushq.coinlens.designsystem.component.MoneyText
-import app.novushq.coinlens.designsystem.component.PrimaryButton
 import app.novushq.coinlens.designsystem.component.SectionHeader
 import app.novushq.coinlens.designsystem.component.UiStateSurface
 import app.novushq.coinlens.designsystem.theme.CoinLensTheme
+import app.novushq.coinlens.designsystem.theme.CoinTextStyles
 import app.novushq.coinlens.designsystem.theme.Sizes
 import app.novushq.coinlens.designsystem.theme.Spacing
-import app.novushq.coinlens.designsystem.theme.Stroke
 import app.novushq.coinlens.designsystem.theme.screenGutter
 import app.novushq.coinlens.model.CollectionSummary
 import app.novushq.coinlens.model.ScanAllowance
 import app.novushq.coinlens.model.ValueRange
+import app.novushq.coinlens.model.usd
 import app.novushq.coinlens.navigation.AppNavigator
 import app.novushq.coinlens.navigation.PaywallSource
 import app.novushq.coinlens.navigation.Route
@@ -69,13 +74,15 @@ fun NavGraphBuilder.homeGraph(navigator: AppNavigator) {
         val state by viewModel.state.collectAsStateWithLifecycle()
         HomeContent(
             state = state,
-            onRetry = viewModel::retry,
+            onAction = viewModel::onAction,
             onScan = { allowance ->
                 navigator.navigate(
                     if (allowance.canScan) Route.Capture else Route.Paywall(PaywallSource.QUOTA),
                 )
             },
-            onOpenCabinet = { navigator.navigate(Route.Collection) },
+            onFirstScan = { navigator.navigate(Route.Capture) },
+            onOpenCollection = { navigator.navigate(Route.Collection) },
+            onOpenSettings = { navigator.navigate(Route.Settings) },
             onOpenScan = { navigator.navigate(Route.Result(it)) },
         )
     }
@@ -83,35 +90,44 @@ fun NavGraphBuilder.homeGraph(navigator: AppNavigator) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HomeContent(
+internal fun HomeContent(
     state: UiState<HomeData>,
-    onRetry: () -> Unit,
+    onAction: (HomeAction) -> Unit,
     onScan: (ScanAllowance) -> Unit,
-    onOpenCabinet: () -> Unit,
+    onFirstScan: () -> Unit,
+    onOpenCollection: () -> Unit,
+    onOpenSettings: () -> Unit,
     onOpenScan: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    val data = (state as? UiState.Success)?.data
     Scaffold(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        CoinFrame(
-                            obverse = null,
-                            contentDescription = null,
-                            size = Sizes.coinFrameTiny,
+                    Text(
+                        text = stringResource(R.string.home_title),
+                        modifier = Modifier.semantics { heading() },
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                },
+                actions = {
+                    IconButton(onClick = onOpenCollection) {
+                        Icon(
+                            imageVector = Icons.Outlined.FolderOpen,
+                            contentDescription = stringResource(R.string.home_cd_collection),
                         )
-                        Text(
-                            text = stringResource(R.string.home_title),
-                            modifier = Modifier
-                                .padding(start = Spacing.sm)
-                                .semantics { heading() },
-                            style = MaterialTheme.typography.titleLarge,
-                            color = MaterialTheme.colorScheme.onSurface,
+                    }
+                    IconButton(onClick = onOpenSettings) {
+                        Icon(
+                            imageVector = Icons.Outlined.Settings,
+                            contentDescription = stringResource(R.string.home_cd_settings),
                         )
                     }
                 },
@@ -122,54 +138,54 @@ private fun HomeContent(
                 scrollBehavior = scrollBehavior,
             )
         },
+        floatingActionButton = {
+            if (data != null) {
+                ScanFab(allowance = data.allowance, onScan = { onScan(data.allowance) })
+            }
+        },
     ) { insets ->
         UiStateSurface(
             state = state,
-            onRetry = onRetry,
+            onRetry = { onAction(HomeAction.Retry) },
             modifier = Modifier.padding(insets),
-        ) { data ->
+            empty = { message ->
+                EmptyState(
+                    message = message,
+                    action = {
+                        OutlinedButton(onClick = onFirstScan) {
+                            Text(stringResource(R.string.home_scan))
+                        }
+                    },
+                )
+            },
+        ) { home ->
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                contentPadding = PaddingValues(
                     horizontal = screenGutter(),
                     vertical = Spacing.xl,
                 ),
                 verticalArrangement = Arrangement.spacedBy(Spacing.xl),
             ) {
                 item {
-                    Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                        Text(
-                            text = stringResource(R.string.home_eyebrow),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                        Text(
-                            text = stringResource(R.string.home_headline),
-                            style = MaterialTheme.typography.displaySmall,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        Text(
-                            text = stringResource(R.string.home_intro),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                    WorthHero(summary = home.summary)
+                }
+                if (!home.allowance.isPro) {
+                    item {
+                        AllowanceLine(allowance = home.allowance)
                     }
                 }
-                item { ScanInvitation(onScan, data.allowance) }
                 item {
-                    Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                        SectionHeader(
-                            title = stringResource(R.string.home_collection),
-                            actionLabel = stringResource(R.string.home_see_all),
-                            onAction = onOpenCabinet,
-                        )
-                        CabinetSummary(data.summary, onOpenCabinet)
-                    }
+                    SectionHeader(
+                        title = stringResource(R.string.home_collection),
+                        actionLabel = stringResource(R.string.home_see_all),
+                        onAction = onOpenCollection,
+                    )
                 }
                 item {
                     SectionHeader(title = stringResource(R.string.home_recent))
                 }
-                if (data.recent.isEmpty()) {
+                if (home.recent.isEmpty()) {
                     item {
                         Text(
                             text = stringResource(R.string.home_recent_empty),
@@ -178,50 +194,42 @@ private fun HomeContent(
                         )
                     }
                 } else {
-                    items(data.recent, key = { it.id }) { scan ->
-                        Surface(
-                            onClick = { onOpenScan(scan.id) },
-                            shape = MaterialTheme.shapes.medium,
-                            color = MaterialTheme.colorScheme.surfaceContainer,
-                            border = BorderStroke(Stroke.hairline, MaterialTheme.colorScheme.outlineVariant),
+                    item {
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+                            contentPadding = PaddingValues(vertical = Spacing.xs),
                         ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(Spacing.md),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(Spacing.md),
-                            ) {
-                                CoinFrame(
-                                    obverse = scan.obversePath,
-                                    contentDescription = scan.identification.name,
-                                    size = Sizes.coinFrameSmall,
-                                )
-                                Column(modifier = Modifier.weight(1f)) {
+                            items(home.recent, key = { it.id }) { scan ->
+                                Column(
+                                    modifier = Modifier
+                                        .width(Sizes.coinFrameMedium)
+                                        .clickable { onOpenScan(scan.id) },
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+                                ) {
+                                    CoinFrame(
+                                        obverse = scan.obversePath,
+                                        contentDescription = scan.identification.name,
+                                        size = Sizes.coinFrameMedium,
+                                    )
                                     Text(
                                         text = scan.identification.name,
-                                        style = MaterialTheme.typography.titleMedium,
+                                        style = MaterialTheme.typography.titleSmall,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                     )
-                                    Text(
-                                        text = scan.identification.country,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
+                                    val range = scan.identification.value.circulated
+                                        ?: scan.identification.value.uncirculated
+                                    if (range != null) {
+                                        MoneyRangeText(
+                                            range = range,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
                                 }
-                                scan.identification.value.circulated?.let { MoneyRangeText(it) }
                             }
                         }
-                    }
-                }
-                if (!data.allowance.isPro) {
-                    item(key = "ad-banner") {
-                        Surface(
-                            shape = MaterialTheme.shapes.medium,
-                            color = MaterialTheme.colorScheme.surfaceContainerLow,
-                            border = BorderStroke(Stroke.hairline, MaterialTheme.colorScheme.outlineVariant),
-                        ) { AdBanner() }
                     }
                 }
                 item { DisclaimerText() }
@@ -231,112 +239,189 @@ private fun HomeContent(
 }
 
 @Composable
-private fun ScanInvitation(onScan: (ScanAllowance) -> Unit, allowance: ScanAllowance) {
-    HeroCard {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = stringResource(
-                        if (allowance.isPro) R.string.home_pro_badge else R.string.home_free_badge,
-                        if (allowance.isPro) 0 else allowance.freeRemaining + allowance.bonusRemaining,
-                    ),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier
-                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.65f), CircleShape)
-                        .padding(horizontal = Spacing.md, vertical = Spacing.xs),
-                )
-                Spacer(Modifier.weight(1f))
-                CoinFrame(
-                    obverse = null,
-                    contentDescription = null,
-                    size = Sizes.coinFrameMedium,
-                )
-            }
+private fun ScanFab(
+    allowance: ScanAllowance,
+    onScan: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    ExtendedFloatingActionButton(
+        onClick = onScan,
+        modifier = modifier,
+        icon = {
+            Icon(
+                imageVector = Icons.Outlined.PhotoCamera,
+                contentDescription = null,
+            )
+        },
+        text = {
             Text(
-                text = stringResource(R.string.home_scan_title),
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                stringResource(
+                    if (allowance.canScan) R.string.home_scan else R.string.home_view_plans,
+                ),
             )
-            Text(
-                text = stringResource(R.string.home_scan_description),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-            )
-            PrimaryButton(
-                text = stringResource(if (allowance.canScan) R.string.home_scan_action else R.string.home_view_plans),
-                onClick = { onScan(allowance) },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = true,
-                icon = if (allowance.canScan) Icons.Outlined.PhotoCamera else null,
-            )
-            if (!allowance.canScan) {
-                Text(
-                    text = stringResource(R.string.home_quota_used),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-            }
+        },
+    )
+}
+
+@Composable
+private fun WorthHero(
+    summary: CollectionSummary,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+    ) {
+        Text(
+            text = stringResource(R.string.home_worth_label),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        MoneyText(
+            money = summary.totalMid,
+            style = CoinTextStyles.moneyDisplay,
+            color = MaterialTheme.colorScheme.onSurface,
+            animate = true,
+        )
+        MoneyRangeText(
+            range = ValueRange(summary.totalLow, summary.totalHigh),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = pluralStringResource(R.plurals.home_piece_count, summary.itemCount, summary.itemCount),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
 @Composable
-private fun CabinetSummary(summary: CollectionSummary, onOpen: () -> Unit) {
-    Surface(
-        onClick = onOpen,
-        shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        border = BorderStroke(Stroke.hairline, MaterialTheme.colorScheme.outlineVariant),
+private fun AllowanceLine(
+    allowance: ScanAllowance,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(Spacing.lg),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Spacing.lg),
-        ) {
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                Text(
-                    text = stringResource(
-                        if (summary.itemCount == 0) R.string.home_no_estimate else R.string.home_total_estimate,
-                    ),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                if (summary.itemCount > 0) {
-                    MoneyText(
-                        summary.totalMid,
-                        style = MaterialTheme.typography.headlineMedium,
-                        animate = true,
-                    )
-                    MoneyRangeText(ValueRange(summary.totalLow, summary.totalHigh))
-                } else {
-                    Text(
-                        text = stringResource(R.string.home_cabinet_empty),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                }
-            }
+        if (allowance.freeRemaining > 0) {
             Text(
-                text = pluralStringResource(R.plurals.home_piece_count, summary.itemCount, summary.itemCount),
-                style = MaterialTheme.typography.labelLarge,
+                text = pluralStringResource(
+                    R.plurals.home_allowance_free,
+                    allowance.freeRemaining,
+                    allowance.freeRemaining,
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else {
+            Text(
+                text = stringResource(R.string.home_allowance_none),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (allowance.bonusRemaining > 0) {
+            Text(
+                text = pluralStringResource(
+                    R.plurals.home_allowance_bonus,
+                    allowance.bonusRemaining,
+                    allowance.bonusRemaining,
+                ),
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
 }
 
-@Preview
+@Preview(name = "Success")
 @Composable
-private fun HomePreview() {
+private fun HomePreviewSuccess() {
+    CoinLensTheme {
+        HomeContent(
+            state = UiState.Success(HomeData(CollectionSummary(), ScanAllowance(), emptyList())),
+            onAction = {},
+            onScan = {},
+            onFirstScan = {},
+            onOpenCollection = {},
+            onOpenSettings = {},
+            onOpenScan = {},
+        )
+    }
+}
+
+@Preview(name = "Empty")
+@Composable
+private fun HomePreviewEmpty() {
+    CoinLensTheme {
+        HomeContent(
+            state = UiState.Empty(HomeViewModel.EMPTY_STATE_MESSAGE),
+            onAction = {},
+            onScan = {},
+            onFirstScan = {},
+            onOpenCollection = {},
+            onOpenSettings = {},
+            onOpenScan = {},
+        )
+    }
+}
+
+@Preview(name = "Loading")
+@Composable
+private fun HomePreviewLoading() {
+    CoinLensTheme {
+        HomeContent(
+            state = UiState.Loading,
+            onAction = {},
+            onScan = {},
+            onFirstScan = {},
+            onOpenCollection = {},
+            onOpenSettings = {},
+            onOpenScan = {},
+        )
+    }
+}
+
+@Preview(name = "Error")
+@Composable
+private fun HomePreviewError() {
+    CoinLensTheme {
+        HomeContent(
+            state = UiState.Error(AppError.Network()),
+            onAction = {},
+            onScan = {},
+            onFirstScan = {},
+            onOpenCollection = {},
+            onOpenSettings = {},
+            onOpenScan = {},
+        )
+    }
+}
+
+@Preview(name = "Success with value")
+@Composable
+private fun HomePreviewValued() {
     CoinLensTheme {
         HomeContent(
             state = UiState.Success(
-                HomeData(CollectionSummary(), ScanAllowance(), emptyList()),
+                HomeData(
+                    summary = CollectionSummary(
+                        itemCount = 3,
+                        totalLow = usd(12.0),
+                        totalHigh = usd(30.0),
+                        totalMid = usd(21.0),
+                    ),
+                    allowance = ScanAllowance(isPro = true, freeRemaining = 0),
+                    recent = emptyList(),
+                ),
             ),
-            onRetry = {},
-            onScan = { _ -> },
-            onOpenCabinet = {},
+            onAction = {},
+            onScan = {},
+            onFirstScan = {},
+            onOpenCollection = {},
+            onOpenSettings = {},
             onOpenScan = {},
         )
     }

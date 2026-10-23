@@ -22,6 +22,10 @@ data class HomeData(
     val recent: List<ScanRecord>,
 )
 
+sealed interface HomeAction {
+    data object Retry : HomeAction
+}
+
 class HomeViewModel(
     private val collections: CollectionRepository,
     private val scans: ScanRepository,
@@ -35,28 +39,41 @@ class HomeViewModel(
         observe()
     }
 
-    fun retry() = observe()
+    fun onAction(action: HomeAction) {
+        when (action) {
+            HomeAction.Retry -> observe()
+        }
+    }
+
+    fun retry() = onAction(HomeAction.Retry)
 
     private fun observe() {
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
             combine(
                 collections.observeSummary(),
-                scans.observeRecent(4),
+                scans.observeRecent(RECENT_LIMIT),
                 observeAllowance(),
             ) { summaryResult, recentResult, allowance ->
                 when {
                     summaryResult is AppResult.Failure -> UiState.Error(summaryResult.error)
                     recentResult is AppResult.Failure -> UiState.Error(recentResult.error)
-                    else -> UiState.Success(
-                        HomeData(
-                            summary = (summaryResult as AppResult.Success).data,
-                            allowance = allowance,
-                            recent = (recentResult as AppResult.Success).data,
-                        ),
-                    )
+                    else -> {
+                        val summary = (summaryResult as AppResult.Success).data
+                        val recent = (recentResult as AppResult.Success).data
+                        if (summary.itemCount == 0 && recent.isEmpty()) {
+                            UiState.Empty(EMPTY_STATE_MESSAGE)
+                        } else {
+                            UiState.Success(HomeData(summary, allowance, recent))
+                        }
+                    }
                 }
             }.collect { _state.value = it }
         }
+    }
+
+    companion object {
+        const val RECENT_LIMIT = 10
+        const val EMPTY_STATE_MESSAGE = "Scan your first coin — it's free"
     }
 }
