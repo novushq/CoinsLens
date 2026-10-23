@@ -34,10 +34,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.core.content.FileProvider
+import app.novushq.coinlens.common.AppError
 import app.novushq.coinlens.common.DispatcherProvider
 import app.novushq.coinlens.common.UiState
 import app.novushq.coinlens.designsystem.component.BackIconButton
@@ -52,8 +54,15 @@ import app.novushq.coinlens.designsystem.component.UiStateSurface
 import app.novushq.coinlens.designsystem.component.ValueRangeBar
 import app.novushq.coinlens.designsystem.theme.Sizes
 import app.novushq.coinlens.designsystem.theme.Spacing
+import app.novushq.coinlens.model.CoinIdentification
+import app.novushq.coinlens.model.Confidence
+import app.novushq.coinlens.model.ItemKind
 import app.novushq.coinlens.model.ScanRecord
+import app.novushq.coinlens.model.ValueEstimate
+import app.novushq.coinlens.model.ValueRange
+import app.novushq.coinlens.model.usd
 import app.novushq.coinlens.navigation.AppNavigator
+import app.novushq.coinlens.navigation.NavCommand
 import app.novushq.coinlens.navigation.Route
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -73,13 +82,22 @@ fun NavGraphBuilder.shareGraph(navigator: AppNavigator) {
     composable<Route.Share> {
         val viewModel: ShareViewModel = koinViewModel()
         val state by viewModel.state.collectAsStateWithLifecycle()
-        ShareContent(state = state, navigator = navigator)
+        ShareContent(
+            state = state,
+            navigator = navigator,
+            onRetry = { viewModel.onAction(ShareAction.Retry) },
+        )
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ShareContent(state: UiState<ScanRecord>, navigator: AppNavigator) {
+private fun ShareContent(
+    state: UiState<ScanRecord>,
+    navigator: AppNavigator,
+    modifier: Modifier = Modifier,
+    onRetry: () -> Unit = {},
+) {
     val context = LocalContext.current
     val dispatchers: DispatcherProvider = koinInject()
     val scope = rememberCoroutineScope()
@@ -128,7 +146,7 @@ private fun ShareContent(state: UiState<ScanRecord>, navigator: AppNavigator) {
                 if (saveToPhotos) {
                     message = R.string.share_saved
                 } else if (output != null) {
-                    val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", output)
+                    val uri = FileProvider.getUriForFile(context, "${context.packageName}.share", output)
                     val send = Intent(Intent.ACTION_SEND).apply {
                         type = "image/png"
                         putExtra(Intent.EXTRA_STREAM, uri)
@@ -155,16 +173,20 @@ private fun ShareContent(state: UiState<ScanRecord>, navigator: AppNavigator) {
             )
         },
     ) { insets ->
-        UiStateSurface(state = state, modifier = Modifier.padding(insets)) { record ->
+        UiStateSurface(
+            state = state,
+            modifier = modifier.padding(insets),
+            onRetry = onRetry,
+        ) { record ->
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(Spacing.xl),
                 verticalArrangement = Arrangement.spacedBy(Spacing.lg),
             ) {
-                item {
+                item(key = "preview") {
                     SharePreview(record = record, dark = darkCard)
                 }
-                item {
+                item(key = "variant") {
                     val options = listOf(
                         stringResource(R.string.share_light),
                         stringResource(R.string.share_dark),
@@ -179,7 +201,7 @@ private fun ShareContent(state: UiState<ScanRecord>, navigator: AppNavigator) {
                         }
                     }
                 }
-                item {
+                item(key = "share") {
                     PrimaryButton(
                         text = stringResource(if (busy) R.string.share_working else R.string.share_action),
                         onClick = { export(record, false, chooserTitle) },
@@ -188,7 +210,7 @@ private fun ShareContent(state: UiState<ScanRecord>, navigator: AppNavigator) {
                         icon = Icons.Outlined.Share,
                     )
                 }
-                item {
+                item(key = "save") {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                         SecondaryButton(
                             text = stringResource(R.string.share_save),
@@ -199,17 +221,22 @@ private fun ShareContent(state: UiState<ScanRecord>, navigator: AppNavigator) {
                         )
                     }
                 }
-                message?.let { item { Text(stringResource(it), color = MaterialTheme.colorScheme.primary) } }
-                item { DisclaimerText() }
+                message?.let { item(key = "message") { Text(stringResource(it), color = MaterialTheme.colorScheme.primary) } }
+                item(key = "disclaimer") { DisclaimerText() }
             }
         }
     }
 }
 
 @Composable
-private fun SharePreview(record: ScanRecord, dark: Boolean) {
+private fun SharePreview(
+    record: ScanRecord,
+    dark: Boolean,
+    modifier: Modifier = Modifier,
+) {
     val coin = record.identification
     Surface(
+        modifier = modifier,
         shape = MaterialTheme.shapes.large,
         color = if (dark) MaterialTheme.colorScheme.inverseSurface else MaterialTheme.colorScheme.surfaceContainerLow,
     ) {
@@ -237,4 +264,73 @@ private fun SharePreview(record: ScanRecord, dark: Boolean) {
             )
         }
     }
+}
+
+private fun previewRecord(recognized: Boolean): ScanRecord = ScanRecord(
+    id = "scan-1",
+    createdAt = java.time.Instant.parse("2026-09-27T10:00:00Z"),
+    obversePath = "",
+    reversePath = null,
+    identification = if (recognized) {
+        CoinIdentification(
+            kind = ItemKind.COIN,
+            name = "Lincoln cent",
+            country = "United States",
+            denomination = "1 cent",
+            year = 1969,
+            mintMark = "S",
+            value = ValueEstimate(
+                circulated = ValueRange(usd(0.10), usd(25.0)),
+                uncirculated = null,
+                confidence = Confidence.MEDIUM,
+            ),
+        )
+    } else {
+        CoinIdentification.unrecognized()
+    },
+)
+
+private val previewNavigator = object : AppNavigator {
+    override val commands: kotlinx.coroutines.flow.Flow<NavCommand> =
+        kotlinx.coroutines.flow.emptyFlow()
+    override fun navigate(route: Route, popUpTo: Route?, inclusive: Boolean) = Unit
+    override fun replaceAll(route: Route) = Unit
+    override fun back() = Unit
+}
+
+@Composable
+private fun SharePreviewContent(state: UiState<ScanRecord>) {
+    app.novushq.coinlens.designsystem.theme.CoinLensTheme {
+        ShareContent(state = state, navigator = previewNavigator)
+    }
+}
+
+@Preview
+@Composable
+private fun ShareLoadingPreview() {
+    SharePreviewContent(state = UiState.Loading)
+}
+
+@Preview
+@Composable
+private fun ShareEmptyPreview() {
+    SharePreviewContent(state = UiState.Empty("No card yet"))
+}
+
+@Preview
+@Composable
+private fun ShareErrorPreview() {
+    SharePreviewContent(state = UiState.Error(AppError.Network()))
+}
+
+@Preview
+@Composable
+private fun ShareSuccessPreview() {
+    SharePreviewContent(state = UiState.Success(previewRecord(recognized = true)))
+}
+
+@Preview
+@Composable
+private fun ShareUnrecognizedPreview() {
+    SharePreviewContent(state = UiState.Success(previewRecord(recognized = false)))
 }
