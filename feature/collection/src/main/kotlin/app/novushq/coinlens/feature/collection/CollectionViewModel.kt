@@ -23,6 +23,15 @@ data class CollectionScreenData(
     val item: ValuedItem? = null,
 )
 
+sealed interface CollectionAction {
+    data class CreateFolder(val name: String) : CollectionAction
+    data class RenameFolder(val id: String, val name: String) : CollectionAction
+    data class DeleteFolder(val id: String) : CollectionAction
+    data class UpdateItem(val item: app.novushq.coinlens.model.CollectionItem) : CollectionAction
+    data class DeleteItem(val id: String) : CollectionAction
+    data object Retry : CollectionAction
+}
+
 class CollectionViewModel(
     savedStateHandle: SavedStateHandle,
     private val repository: CollectionRepository,
@@ -35,6 +44,17 @@ class CollectionViewModel(
     init { observe() }
 
     fun retry() = observe()
+
+    fun onAction(action: CollectionAction) {
+        when (action) {
+            is CollectionAction.CreateFolder -> createFolder(action.name)
+            is CollectionAction.RenameFolder -> renameFolder(action.id, action.name)
+            is CollectionAction.DeleteFolder -> deleteFolder(action.id)
+            is CollectionAction.UpdateItem -> updateItem(action.item)
+            is CollectionAction.DeleteItem -> deleteItem(action.id)
+            CollectionAction.Retry -> retry()
+        }
+    }
 
     fun createFolder(name: String) = mutate { repository.createFolder(name) }
     fun renameFolder(id: String, name: String) = mutate { repository.renameFolder(id, name) }
