@@ -3,14 +3,23 @@
     <string name="capture_title">A closer look</string>
     <string name="capture_front_prompt">Photograph the front in even light. Keep the full coin inside the frame.</string>
     <string name="capture_reverse_prompt">Add the reverse if you can. The front is enough to begin.</string>
-    <string name="capture_front_photo">Front of the coin</string>
-    <string name="capture_reverse_photo">Reverse of the coin</string>
+    <string name="capture_front_side_label">Front — fit the coin inside the circle</string>
+    <string name="capture_back_side_label">Back — fit the coin inside the circle</string>
+    <string name="capture_preview_photo">Captured coin photo</string>
     <string name="capture_choose_front">Choose front photo</string>
     <string name="capture_choose_reverse">Choose reverse photo</string>
     <string name="capture_camera">Take a photo</string>
     <string name="capture_add_reverse">Add reverse</string>
-    <string name="capture_front_side">Use front</string>
+    <string name="capture_retake">Retake</string>
+    <string name="capture_skip_back">Skip</string>
     <string name="capture_identify">Identify this coin</string>
     <string name="capture_photo_guidance">Avoid glare and shadows. Your photos stay in this app’s private storage.</string>
-    <string name="capture_photo_error">Couldn’t read that photo. Choose another or take a new one.</string>
+    <string name="capture_glare_warning">Glare detected — tilt the coin or move away from the light.</string>
+    <string name="capture_blur_warning">Photo looks blurry — hold steady and tap to focus.</string>
+    <string name="capture_permission_rationale">CoinLens needs the camera to photograph your coins. Photos never leave this app’s private storage.</string>
+    <string name="capture_permission_blocked">Camera access is off. Open settings to turn it back on, or choose a photo instead.</string>
+    <string name="capture_grant">Grant camera access</string>
+    <string name="capture_open_settings">Open settings</string>
+    <string name="capture_quota_empty">No scans left. Upgrade for unlimited scans or earn a bonus scan.</string>
+    <string name="capture_view_plans">View plans</string>
 </resources>
